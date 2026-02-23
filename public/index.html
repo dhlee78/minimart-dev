@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MiniMarket | 홈</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-page="home">
+  
+<div class="topbar">
+  <div class="top-inner">
+    <a class="logo" href="index.html" aria-label="home">
+      <span class="mark">M</span>
+      <span>MiniMarket</span>
+    </a>
+
+    <button class="catbtn" data-open-menu type="button" aria-haspopup="dialog">☰ 전체 카테고리</button>
+
+    <div class="search-wrap">
+      <div class="search" role="search">
+        <span style="color:#9ca3af">🔎</span>
+        <input data-search type="search" placeholder="상품을 검색하세요" aria-label="search" />
+        <span class="hint">Ctrl K</span>
+      </div>
+      <div class="autocomplete" data-autocomplete role="listbox" aria-label="autocomplete"></div>
+    </div>
+
+    <div class="actions">
+      <a class="action" href="wishlist.html">찜</a>
+      <a class="action" href="orders.html">주문내역</a>
+      <a class="action" href="login.html">로그인</a>
+      <button class="action" data-logout type="button">로그아웃</button>
+
+<script>
+(() => {
+  try {
+    const a = JSON.parse(localStorage.getItem("minimart_auth") || "null");
+    const authed = !!(a && (a.token || a.email));
+    // Login (default visible)
+    document.querySelectorAll('a.action[href="login.html"]').forEach(el => {
+      el.style.display = authed ? "none" : "";
+    });
+    // Logout (may be hidden by CSS by default)
+    document.querySelectorAll('[data-logout]').forEach(el => {
+      el.style.display = authed ? "inline-flex" : "none";
+    });
+  } catch (e) {
+    document.querySelectorAll('a.action[href="login.html"]').forEach(el => el.style.display = "");
+    document.querySelectorAll('[data-logout]').forEach(el => el.style.display = "none");
+  }
+})();
+</script>
+      <a class="action" href="cart.html" style="background:rgba(255,255,255,.22)">
+        장바구니 <span class="cartbadge" data-cart-badge>0</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" data-overlay aria-hidden="true">
+  <div class="dialog megamenu" data-dialog role="dialog" aria-modal="true" aria-label="category menu">
+    <div class="mm-left" data-mm-left></div>
+    <div class="mm-right" data-mm-right></div>
+  </div>
+</div>
+
+<div class="overlay" data-modal-overlay aria-hidden="true">
+  <div class="dialog modal" data-modal-dialog role="dialog" aria-modal="true" aria-label="options modal"></div>
+</div>
+
+<div class="toast" role="status" aria-live="polite"></div>
+
+  <div class="container">
+    <div class="main">
+      <div class="sidebarwrap">
+        <div class="sidebar">
+          <div class="side-head">카테고리</div>
+          <div data-sidebar></div>
+        </div>
+
+        <div class="filters" data-filters>
+          <div class="f-head">
+            <div>필터</div>
+            <button type="button" data-f-reset>초기화</button>
+          </div>
+
+          <div class="f-sec">
+            <div class="f-label">가격대</div>
+            <div class="f-row">
+              <input data-f-price-min type="number" placeholder="최소(원)" />
+              <input data-f-price-max type="number" placeholder="최대(원)" />
+            </div>
+          </div>
+
+          <div class="f-sec">
+            <div class="f-label">평점</div>
+            <div class="f-row">
+              <select data-f-rating>
+                <option value="0">전체</option>
+                <option value="4.5">4.5 이상</option>
+                <option value="4.0">4.0 이상</option>
+                <option value="3.5">3.5 이상</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="f-sec">
+            <div class="f-label">배송</div>
+            <div class="f-row">
+              <select data-f-ship>
+                <option value="all">전체</option>
+                <option value="rocket">로켓배송</option>
+                <option value="dawn">새벽배송</option>
+                <option value="normal">일반배송</option>
+              </select>
+            </div>
+            <div style="height:10px"></div>
+            <label class="f-check"><input data-f-free type="checkbox" /> 무료배송(상품가 50,000원 이상)</label>
+            <div style="height:8px"></div>
+            <label class="f-check"><input data-f-stock type="checkbox" /> 재고 있는 상품만</label>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="banner" data-carousel>
+          <div class="carousel">
+            <div class="slide" data-slide>
+              <div class="title">풀 옵션 쇼핑 UX 목업 (QA 연습용)</div>
+              <div class="desc">URL 상태 유지 + 찜/최근본 + 쿠폰/할인 + 옵션 모달 + 접근성(포커스 트랩/ESC).</div>
+              <div class="cta">
+                <span class="pill">QA 포인트: 상태/경계/키보드/새로고침</span>
+                <a class="btn blue" href="wishlist.html">찜 보기</a>
+                <a class="btn primary" href="#products">상품 보기</a>
+              </div>
+            </div>
+            <div class="slide" data-slide>
+              <div class="title">검색/필터/정렬/페이지</div>
+              <div class="desc">검색/필터/정렬/페이지/뷰 상태가 URL로 유지되어 새로고침/공유에도 동일하게 표시됩니다.</div>
+              <div class="cta">
+                <span class="pill">Ctrl+K · 자동완성</span>
+                <a class="btn blue" href="cart.html">장바구니</a>
+                <a class="btn primary" href="QA_CHECKLIST.pdf">QA 체크리스트</a>
+              </div>
+            </div>
+            <div class="slide" data-slide>
+              <div class="title">옵션 선택 + 쿠폰 UI</div>
+              <div class="desc">의류/신발은 옵션(사이즈/색상) 선택 모달을 거쳐 담기. 쿠폰은 버튼으로 토스트 표시.</div>
+              <div class="cta">
+                <span class="pill">ESC로 닫기</span>
+                <button class="btn blue" type="button" onclick="location.href='index.html?cat=apparel'">의류로</button>
+                <button class="btn primary" type="button" onclick="location.href='index.html?cat=shoes'">신발로</button>
+              </div>
+            </div>
+          </div>
+          <div class="dots" data-dots></div>
+        </div>
+
+        <div class="strip" data-recently-viewed></div>
+
+        <div class="controls" id="products">
+          <div class="pill" data-stat>0개</div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <select class="sort" data-sort aria-label="sort">
+              <option value="reco">추천순</option>
+              <option value="price-asc">가격 낮은순</option>
+              <option value="price-desc">가격 높은순</option>
+              <option value="rating">평점 높은순</option>
+              <option value="reviews">리뷰 많은순</option>
+            </select>
+            <div class="toggle" aria-label="view toggle">
+              <button class="tbtn" data-view-grid type="button">그리드</button>
+              <button class="tbtn" data-view-list type="button">리스트</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid" data-products></div>
+        <div class="pager" data-pager></div>
+
+        <div class="footer">© MiniMarket Mock UI v5 — localStorage + URL query</div>
+      </div>
+    </div>
+  </div>
+  
+<div class="bnav">
+  <div class="bnav-inner">
+    <a href="index.html" data-page="home">🏠<span>홈</span></a>
+    <a href="index.html#products" data-page="search">🔎<span>검색</span></a>
+    <a href="cart.html" data-page="cart">🛒<span>장바구니</span></a>
+    <a href="orders.html" data-page="orders">📦<span>주문</span></a>
+  </div>
+</div>
+
+  <script src="app.js"></script>
+</body>
+</html>

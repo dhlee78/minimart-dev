@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MiniMarket | 로그인</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-page="login">
+  
+<div class="topbar">
+  <div class="top-inner">
+    <a class="logo" href="index.html" aria-label="home">
+      <span class="mark">M</span>
+      <span>MiniMarket</span>
+    </a>
+
+    <button class="catbtn" data-open-menu type="button" aria-haspopup="dialog">☰ 전체 카테고리</button>
+
+    <div class="search-wrap">
+      <div class="search" role="search">
+        <span style="color:#9ca3af">🔎</span>
+        <input data-search type="search" placeholder="상품을 검색하세요" aria-label="search" />
+        <span class="hint">Ctrl K</span>
+      </div>
+      <div class="autocomplete" data-autocomplete role="listbox" aria-label="autocomplete"></div>
+    </div>
+
+    <div class="actions">
+      <a class="action" href="wishlist.html">찜</a>
+      <a class="action" href="orders.html">주문내역</a>
+      <a class="action" href="login.html">로그인</a>
+      <button class="action" data-logout type="button">로그아웃</button>
+
+<script>
+(() => {
+  try {
+    const a = JSON.parse(localStorage.getItem("minimart_auth") || "null");
+    const authed = !!(a && (a.token || a.email));
+    // Login (default visible)
+    document.querySelectorAll('a.action[href="login.html"]').forEach(el => {
+      el.style.display = authed ? "none" : "";
+    });
+    // Logout (may be hidden by CSS by default)
+    document.querySelectorAll('[data-logout]').forEach(el => {
+      el.style.display = authed ? "inline-flex" : "none";
+    });
+  } catch (e) {
+    document.querySelectorAll('a.action[href="login.html"]').forEach(el => el.style.display = "");
+    document.querySelectorAll('[data-logout]').forEach(el => el.style.display = "none");
+  }
+})();
+</script>
+      <a class="action" href="cart.html" style="background:rgba(255,255,255,.22)">
+        장바구니 <span class="cartbadge" data-cart-badge>0</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" data-overlay aria-hidden="true">
+  <div class="dialog megamenu" data-dialog role="dialog" aria-modal="true" aria-label="category menu">
+    <div class="mm-left" data-mm-left></div>
+    <div class="mm-right" data-mm-right></div>
+  </div>
+</div>
+
+<div class="overlay" data-modal-overlay aria-hidden="true">
+  <div class="dialog modal" data-modal-dialog role="dialog" aria-modal="true" aria-label="options modal"></div>
+</div>
+
+<div class="toast" role="status" aria-live="polite"></div>
+
+  <div class="container">
+    <div class="row" style="justify-content:center">
+      <div class="detail-card" style="width:520px;max-width:100%">
+        <div class="detail-pad">
+          <div style="font-weight:950;font-size:18px">로그인</div>
+          <div style="margin-top:6px;color:#6b7280;font-size:13px">Mock: 이메일 형식 + 비밀번호 8자 이상</div>
+          <form data-login-form>
+            <div class="field">
+              <label for="email">이메일</label>
+              <input id="email" data-email type="email" placeholder="test@example.com" required />
+            </div>
+            <div class="field">
+              <label for="pw">비밀번호</label>
+              <input id="pw" data-pw type="password" placeholder="8자 이상" required />
+            </div>
+            <button class="btn blue" type="submit" style="width:100%;justify-content:center">로그인</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="footer">로그인 후 next 페이지로 이동</div>
+  </div>
+  
+<div class="bnav">
+  <div class="bnav-inner">
+    <a href="index.html" data-page="home">🏠<span>홈</span></a>
+    <a href="index.html#products" data-page="search">🔎<span>검색</span></a>
+    <a href="cart.html" data-page="cart">🛒<span>장바구니</span></a>
+    <a href="orders.html" data-page="orders">📦<span>주문</span></a>
+  </div>
+</div>
+
+  <script src="app.js"></script>
+</body>
+</html>

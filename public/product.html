@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MiniMarket | 상품 상세</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-page="home">
+  
+<div class="topbar">
+  <div class="top-inner">
+    <a class="logo" href="index.html" aria-label="home">
+      <span class="mark">M</span>
+      <span>MiniMarket</span>
+    </a>
+
+    <button class="catbtn" data-open-menu type="button" aria-haspopup="dialog">☰ 전체 카테고리</button>
+
+    <div class="search-wrap">
+      <div class="search" role="search">
+        <span style="color:#9ca3af">🔎</span>
+        <input data-search type="search" placeholder="상품을 검색하세요" aria-label="search" />
+        <span class="hint">Ctrl K</span>
+      </div>
+      <div class="autocomplete" data-autocomplete role="listbox" aria-label="autocomplete"></div>
+    </div>
+
+    <div class="actions">
+      <a class="action" href="wishlist.html">찜</a>
+      <a class="action" href="orders.html">주문내역</a>
+      <a class="action" href="login.html">로그인</a>
+      <button class="action" data-logout type="button">로그아웃</button>
+
+<script>
+(() => {
+  try {
+    const a = JSON.parse(localStorage.getItem("minimart_auth") || "null");
+    const authed = !!(a && (a.token || a.email));
+    // Login (default visible)
+    document.querySelectorAll('a.action[href="login.html"]').forEach(el => {
+      el.style.display = authed ? "none" : "";
+    });
+    // Logout (may be hidden by CSS by default)
+    document.querySelectorAll('[data-logout]').forEach(el => {
+      el.style.display = authed ? "inline-flex" : "none";
+    });
+  } catch (e) {
+    document.querySelectorAll('a.action[href="login.html"]').forEach(el => el.style.display = "");
+    document.querySelectorAll('[data-logout]').forEach(el => el.style.display = "none");
+  }
+})();
+</script>
+      <a class="action" href="cart.html" style="background:rgba(255,255,255,.22)">
+        장바구니 <span class="cartbadge" data-cart-badge>0</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" data-overlay aria-hidden="true">
+  <div class="dialog megamenu" data-dialog role="dialog" aria-modal="true" aria-label="category menu">
+    <div class="mm-left" data-mm-left></div>
+    <div class="mm-right" data-mm-right></div>
+  </div>
+</div>
+
+<div class="overlay" data-modal-overlay aria-hidden="true">
+  <div class="dialog modal" data-modal-dialog role="dialog" aria-modal="true" aria-label="options modal"></div>
+</div>
+
+<div class="toast" role="status" aria-live="polite"></div>
+
+  <div class="container" data-product-detail>
+    <div class="row">
+      <div class="col detail-card">
+        <div class="thumb" style="height:420px">PRODUCT IMG</div>
+      </div>
+      <div class="col detail-card">
+        <div class="detail-pad">
+          <div class="pill" style="display:inline-block">카테고리: <span data-pcat></span></div>
+          <div style="margin-top:10px;font-weight:950;font-size:20px;line-height:1.25" data-pname>상품명</div>
+          <div style="margin-top:8px;color:#6b7280">배송: <span data-ptag>일반배송</span> · 재고 <span data-pstock>0</span></div>
+
+          <div style="margin-top:12px;font-size:24px;font-weight:950">
+            <span data-porig style="color:#6b7280;font-weight:900;font-size:13px;text-decoration:line-through;margin-right:8px"></span>
+            <span data-pprice>0원</span>
+          </div>
+
+          <div style="margin-top:10px;display:none" data-pcoupon>
+            <span class="pill" style="display:inline-flex;gap:8px;align-items:center">
+              ✅ 쿠폰 적용 가능
+            </span>
+          </div>
+
+          <div class="field">
+            <label for="qty">수량</label>
+            <input id="qty" data-qty type="number" min="1" value="1" />
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+            <button class="btn blue" data-add-cart type="button" style="flex:1;justify-content:center">옵션/장바구니 담기</button>
+            <button class="btn" data-wish-one type="button" style="flex:1;justify-content:center">♡ 찜</button>
+          </div>
+
+          <div style="margin-top:12px;color:#6b7280;font-size:12px;line-height:1.5">
+            QA 포인트: 옵션 조합(사이즈/색상), 같은 상품 다른 옵션을 각각 담기, 새로고침 후 최근본/찜 유지
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><a class="btn" href="index.html" style="padding:8px 10px">← 홈으로</a></div>
+  </div>
+  
+<div class="bnav">
+  <div class="bnav-inner">
+    <a href="index.html" data-page="home">🏠<span>홈</span></a>
+    <a href="index.html#products" data-page="search">🔎<span>검색</span></a>
+    <a href="cart.html" data-page="cart">🛒<span>장바구니</span></a>
+    <a href="orders.html" data-page="orders">📦<span>주문</span></a>
+  </div>
+</div>
+
+  <script src="app.js"></script>
+</body>
+</html>
