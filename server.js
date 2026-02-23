@@ -11,6 +11,99 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(cors());
 app.use(express.json());
+// ✅ server.js에 “로그인 + 허용 이메일(화이트리스트)”를 붙이는 샘플 코드
+// 사용 라이브러리: passport, passport-google-oauth20, express-session
+//
+// 1) 먼저 설치:
+//    npm install passport passport-google-oauth20 express-session
+//
+// 2) server.js에서 app 생성(예: const app = express();) 이후,
+//    app.use(express.json()) 같은 설정들 근처에 아래를 붙이세요.
+//
+// 3) app.use(express.static(...)) 보다 "위"에 두면 정적 페이지도 로그인 걸립니다.
+//    (프로젝트 구조에 따라 위치가 다를 수 있어요.)
+
+const session = require("express-session");
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+
+// 1) 세션 설정 (로그인 상태 유지)
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "dev-secret-change-me",
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+
+// 2) passport 초기화
+app.use(passport.initialize());
+app.use(passport.session());
+
+// 3) 세션에 사용자 저장/복원
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((obj, done) => done(null, obj));
+
+// 4) 허용 이메일 목록 검사 함수
+function isAllowedEmail(email) {
+  const allowed = (process.env.ALLOWED_EMAILS || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+
+  return allowed.includes((email || "").toLowerCase());
+}
+
+// 5) Google 로그인 전략
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "/auth/google/callback",
+    },
+    (accessToken, refreshToken, profile, done) => {
+      const email = profile?.emails?.[0]?.value;
+
+      // 이메일이 허용 목록에 없으면 로그인 실패 처리
+      if (!isAllowedEmail(email)) {
+        return done(null, false);
+      }
+
+      // 허용되면 사용자 정보 저장
+      return done(null, { email });
+    }
+  )
+);
+
+// 6) 로그인 시작
+app.get("/auth/google", passport.authenticate("google", { scope: ["email"] }));
+
+// 7) 로그인 콜백
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/not-allowed" }),
+  (req, res) => res.redirect("/")
+);
+
+// 8) 허용 안 된 경우
+app.get("/not-allowed", (req, res) => {
+  res.status(403).send("접근 불가: 허용된 Google 계정이 아닙니다.");
+});
+
+// 9) 로그인 강제 미들웨어
+function requireLogin(req, res, next) {
+  if (req.isAuthenticated && req.isAuthenticated()) return next();
+  return res.redirect("/auth/google");
+}
+
+// ✅ 전체 사이트 보호(가장 쉬움)
+app.use(requireLogin);
+
+// (선택) 로그아웃
+app.get("/logout", (req, res) => {
+  req.logout(() => res.redirect("/"));
+});
 
 // Request ID for tracing (helps QA + debugging)
 app.use((req,res,next)=>{
