@@ -54,7 +54,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "/auth/google/callback",
+      callbackURL: "https://chatgpt.com/c/699cb6cf-0eb0-83aa-9c0b-b27fc76ab80d",
     },
     (accessToken, refreshToken, profile, done) => {
       const email = profile?.emails?.[0]?.value;
