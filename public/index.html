@@ -194,5 +194,98 @@
 </div>
 
   <script src="app.js"></script>
+
+
+
+
+
+<script type="module">
+import { parseQuery, getState, setState } from './js/core/state.js';
+import { showToast } from './js/core/toast.js';
+import { apiFetch } from './js/api/client.js';
+
+parseQuery();
+
+async function loadProducts() {
+  const state = getState();
+  try {
+    const data = await apiFetch(`/products?page=${state.page}&sort=${state.sort}`);
+    renderProducts(data.items || []);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function renderProducts(items) {
+  const container = document.querySelector('#products');
+  if (!container) return;
+
+  container.innerHTML = '';
+  if (!items.length) {
+    container.innerHTML = '<p>상품이 없습니다.</p>';
+    return;
+  }
+
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.style.border = '1px solid #ddd';
+    div.style.padding = '10px';
+    div.style.marginBottom = '10px';
+    div.innerHTML = `
+      <strong>${item.name}</strong><br/>
+      가격: ${item.price}<br/>
+      <button data-id="${item.id}">장바구니 담기</button>
+    `;
+    container.appendChild(div);
+  });
+
+  container.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const productId = btn.dataset.id;
+      try {
+        await apiFetch('/cart', {
+          method: 'POST',
+          body: JSON.stringify({
+            productId,
+            optionId: null,
+            quantity: 1
+          })
+        });
+        showToast('장바구니에 담았습니다.');
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  });
+}
+
+document.getElementById('sortPriceAsc')?.addEventListener('click', () => {
+  setState({ sort: 'price-asc', page: 1 });
+});
+
+document.getElementById('sortPriceDesc')?.addEventListener('click', () => {
+  setState({ sort: 'price-desc', page: 1 });
+});
+
+document.getElementById('nextPage')?.addEventListener('click', () => {
+  const state = getState();
+  setState({ page: Number(state.page) + 1 });
+});
+
+window.addEventListener('statechange', () => {
+  loadProducts();
+  const el = document.querySelector('#products');
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+});
+
+loadProducts();
+</script>
+
+
+
+
+
 </body>
 </html>
