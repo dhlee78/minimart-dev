@@ -66,11 +66,10 @@ async function loginIfPossible() {
 
   // 흔한 형태 2가지 모두 시도: {username,password} / {id,password}
   const payloads = [
-    { username: USER, password: PASS },
-    { id: USER, password: PASS },
-    { email: USER, password: PASS },
-  ];
-
+  { email: USER, password: PASS },   // ⭐ 이게 핵심
+  { username: USER, password: PASS },
+  { id: USER, password: PASS },
+];
   for (const body of payloads) {
     const { res, data, text } = await fetchJson("/api/auth/login", {
       method: "POST",
