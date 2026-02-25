@@ -28,3 +28,10 @@ QA 포인트(추천)
 - 401: 토큰 없음/세션 만료
 - 400: 주소 누락, 쿠폰/포인트 검증 실패
 - 409: 품절/재고부족, 상태 전이 불가, 환불 조건 불충족
+
+## Run
+npm install
+npm start
+
+Server: http://localhost:3000
+Health: http://localhost:3000/api/health

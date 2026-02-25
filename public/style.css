@@ -1,3 +1,5 @@
+:root{--primary:#2563EB;--danger:#DC2626;--gray100:#F5F6F8;--gray200:#E5E7EB;--text:#111827;}
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 :root{
   --bg:#f2f4f7;
   --card:#ffffff;
@@ -306,15 +308,21 @@ a{color:inherit;text-decoration:none}
 
 /* Toast */
 .toast{
-  position:fixed;left:50%;bottom:76px;transform:translateX(-50%);
+  position:fixed;left:50%;bottom:16px;transform:translateX(-50%) translateY(8px);
   background:rgba(17,24,39,.92);
-  color:#fff;padding:12px 14px;border-radius:14px;
-  box-shadow:var(--shadow);
-  opacity:0;pointer-events:none;
+  color:#fff;
+  padding:12px 16px;
+  border-radius:8px;
+  font-size:14px;
+  font-weight:500;
+  line-height:1.4;
+  opacity:0;
+  pointer-events:none;
   transition:opacity .2s ease, transform .2s ease;
   max-width:min(92vw,520px);
+  z-index:9999;
 }
-.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* Overlays */
 .overlay{
@@ -456,3 +464,28 @@ input[type="number"] {
 
 /* AUTH VISIBILITY DEFAULT (defensive) */
 [data-logout]{display:none;}
+
+.product-skeleton{height:420px;border-radius:16px;background:#F5F6F8;margin:40px 0;animation:pulse 1.2s infinite}
+@keyframes pulse{0%{opacity:.6}50%{opacity:1}100%{opacity:.6}}
+.toast{transition:opacity .2s ease,transform .2s ease}
+
+.pd-wrap{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin:40px 0}
+.pd-main{width:100%;aspect-ratio:1/1;border-radius:16px;background:#F5F6F8;object-fit:cover}
+.pd-thumbs img{width:72px;height:72px;border-radius:8px;border:1px solid #E5E7EB;margin-right:8px;cursor:pointer}
+.qty{display:flex;border:1px solid #E5E7EB;border-radius:8px;height:40px;align-items:center}
+.qty button{width:36px}
+
+.cart-head{display:flex;gap:12px;margin-bottom:12px}
+.danger{color:#DC2626}
+
+.link-danger{font-size:13px;font-weight:600;color:#DC2626;background:transparent;border:0;cursor:pointer}
+.link-danger:hover{text-decoration:underline}
+.order-card{border:1px solid #E5E7EB;border-radius:12px;padding:20px;margin-bottom:16px;background:#fff;cursor:pointer}
+.order-detail{max-height:0;overflow:hidden;transition:max-height .2s ease}
+.order-card.open .order-detail{max-height:1200px}
+.status-pill{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;color:#fff}
+
+.order-card{transition:box-shadow .2s ease}
+.order-card.open{box-shadow:0 8px 20px rgba(0,0,0,.08)}
+.order-detail{transition:max-height .2s ease,opacity .2s ease;opacity:0}
+.order-card.open .order-detail{opacity:1}
