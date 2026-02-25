@@ -45,7 +45,21 @@ function asyncHandler(fn){
 
 // ---- Data store (in-memory for mock) ----
 const PRODUCTS_PATH = path.join(__dirname, "data", "products.json");
-let products = JSON.parse(fs.readFileSync(PRODUCTS_PATH, "utf-8"));
+let products = [];
+try {
+  // Ensure data directory exists (especially in fresh deploy environments)
+  fs.mkdirSync(path.dirname(PRODUCTS_PATH), { recursive: true });
+
+  // If products.json does not exist, create a valid empty JSON array
+  if (!fs.existsSync(PRODUCTS_PATH)) {
+    fs.writeFileSync(PRODUCTS_PATH, "[]", "utf-8");
+  }
+
+  products = JSON.parse(fs.readFileSync(PRODUCTS_PATH, "utf-8"));
+} catch (e) {
+  console.warn("[WARN] products.json missing/broken -> using []:", e?.message || e);
+  products = [];
+}
 function persistProducts(){
   fs.writeFileSync(PRODUCTS_PATH, JSON.stringify(products, null, 2), "utf-8");
 }
