@@ -688,11 +688,11 @@ app.use((err, req, res, next)=>{
 });
 
 // ---- Static frontend (same-origin fetch works) ----
-const PUBLIC_DIR = path.join(__dirname, "..", "public");
+const PUBLIC_DIR = path.resolve(process.cwd(), "public");
 app.use(express.static(PUBLIC_DIR));
 
 // Fallback to index
-app.get("/", (req,res)=> res.sendFile(path.join(PUBLIC_DIR, "index.html")));
+app.get("/", (req,res)=> res.sendFile(path.resolve(PUBLIC_DIR, "index.html")));
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, ()=> console.log("MiniMarket API+Web running on", PORT));
