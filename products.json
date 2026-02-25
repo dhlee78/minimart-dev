@@ -1,0 +1,1741 @@
+[
+  {
+    "id": "1",
+    "name": "MiniMarket 상품 1",
+    "price": 73000,
+    "originalPrice": 73000,
+    "stock": 0,
+    "shipping": "rocket",
+    "rating": 5,
+    "reviewCount": 65,
+    "coupon": false,
+    "category": "dawn",
+    "image": "https://via.placeholder.com/300?text=Product+1",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+1"
+    ],
+    "options": [],
+    "description": "<p>상품 1 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "2",
+    "name": "MiniMarket 상품 2",
+    "price": 188000,
+    "originalPrice": 188000,
+    "stock": 28,
+    "shipping": "rocket",
+    "rating": 4.7,
+    "reviewCount": 74,
+    "coupon": true,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+2",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+2"
+    ],
+    "options": [
+      {
+        "optionId": "opt2_1",
+        "label": "Black / S",
+        "stock": 14,
+        "priceDelta": 2000
+      },
+      {
+        "optionId": "opt2_2",
+        "label": "White / M",
+        "stock": 10,
+        "priceDelta": 0
+      },
+      {
+        "optionId": "opt2_3",
+        "label": "Navy / L",
+        "stock": 4,
+        "priceDelta": 0
+      },
+      {
+        "optionId": "opt2_4",
+        "label": "Gray / XL",
+        "stock": 3,
+        "priceDelta": 1000
+      }
+    ],
+    "description": "<p>상품 2 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "3",
+    "name": "MiniMarket 상품 3",
+    "price": 188000,
+    "originalPrice": 188000,
+    "stock": 24,
+    "shipping": "dawn",
+    "rating": 3.8,
+    "reviewCount": 0,
+    "coupon": false,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+3",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+3"
+    ],
+    "options": [
+      {
+        "optionId": "opt3_1",
+        "label": "Black / S",
+        "stock": 7,
+        "priceDelta": 0
+      },
+      {
+        "optionId": "opt3_2",
+        "label": "White / M",
+        "stock": 11,
+        "priceDelta": 0
+      }
+    ],
+    "description": "<p>상품 3 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "4",
+    "name": "MiniMarket 상품 4",
+    "price": 66000,
+    "originalPrice": 72000,
+    "stock": 15,
+    "shipping": "rocket",
+    "rating": 3.8,
+    "reviewCount": 69,
+    "coupon": false,
+    "category": "qa",
+    "image": "https://via.placeholder.com/300?text=Product+4",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+4"
+    ],
+    "options": [],
+    "description": "<p>상품 4 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "5",
+    "name": "MiniMarket 상품 5",
+    "price": 198000,
+    "originalPrice": 198000,
+    "stock": 11,
+    "shipping": "dawn",
+    "rating": 4.0,
+    "reviewCount": 51,
+    "coupon": false,
+    "category": "dawn",
+    "image": "https://via.placeholder.com/300?text=Product+5",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+5"
+    ],
+    "options": [],
+    "description": "<p>상품 5 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "6",
+    "name": "MiniMarket 상품 6",
+    "price": 88000,
+    "originalPrice": 88000,
+    "stock": 5,
+    "shipping": "normal",
+    "rating": 3.9,
+    "reviewCount": 32,
+    "coupon": false,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+6",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+6"
+    ],
+    "options": [
+      {
+        "optionId": "opt6_1",
+        "label": "Black / S",
+        "stock": 11,
+        "priceDelta": 1000
+      },
+      {
+        "optionId": "opt6_2",
+        "label": "White / M",
+        "stock": 6,
+        "priceDelta": 0
+      },
+      {
+        "optionId": "opt6_3",
+        "label": "Navy / L",
+        "stock": 4,
+        "priceDelta": 2000
+      }
+    ],
+    "description": "<p>상품 6 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "7",
+    "name": "MiniMarket 상품 7",
+    "price": 115000,
+    "originalPrice": 134000,
+    "stock": 12,
+    "shipping": "rocket",
+    "rating": 4.3,
+    "reviewCount": 0,
+    "coupon": false,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+7",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+7"
+    ],
+    "options": [],
+    "description": "<p>상품 7 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "8",
+    "name": "MiniMarket 상품 8",
+    "price": 85000,
+    "originalPrice": 85000,
+    "stock": 13,
+    "shipping": "normal",
+    "rating": 4.3,
+    "reviewCount": 43,
+    "coupon": true,
+    "category": "shoes",
+    "image": "https://via.placeholder.com/300?text=Product+8",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+8"
+    ],
+    "options": [
+      {
+        "optionId": "opt8_1",
+        "label": "Black / 250",
+        "stock": 1,
+        "priceDelta": 2000
+      },
+      {
+        "optionId": "opt8_2",
+        "label": "White / 260",
+        "stock": 5,
+        "priceDelta": 0
+      }
+    ],
+    "description": "<p>상품 8 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "9",
+    "name": "MiniMarket 상품 9",
+    "price": 109000,
+    "originalPrice": 127000,
+    "stock": 18,
+    "shipping": "normal",
+    "rating": 3.8,
+    "reviewCount": 108,
+    "coupon": true,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+9",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+9"
+    ],
+    "options": [],
+    "description": "<p>상품 9 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "10",
+    "name": "MiniMarket 상품 10",
+    "price": 161000,
+    "originalPrice": 182000,
+    "stock": 13,
+    "shipping": "rocket",
+    "rating": 3.7,
+    "reviewCount": 17,
+    "coupon": true,
+    "category": "rocket",
+    "image": "https://via.placeholder.com/300?text=Product+10",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+10"
+    ],
+    "options": [],
+    "description": "<p>상품 10 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "11",
+    "name": "MiniMarket 상품 11",
+    "price": 151000,
+    "originalPrice": 151000,
+    "stock": 23,
+    "shipping": "normal",
+    "rating": 4.0,
+    "reviewCount": 182,
+    "coupon": false,
+    "category": "qa",
+    "image": "https://via.placeholder.com/300?text=Product+11",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+11"
+    ],
+    "options": [],
+    "description": "<p>상품 11 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "12",
+    "name": "MiniMarket 상품 12",
+    "price": 61000,
+    "originalPrice": 72000,
+    "stock": 23,
+    "shipping": "normal",
+    "rating": 4.3,
+    "reviewCount": 57,
+    "coupon": false,
+    "category": "dawn",
+    "image": "https://via.placeholder.com/300?text=Product+12",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+12"
+    ],
+    "options": [],
+    "description": "<p>상품 12 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "13",
+    "name": "MiniMarket 상품 13",
+    "price": 155000,
+    "originalPrice": 155000,
+    "stock": 9,
+    "shipping": "rocket",
+    "rating": 3.9,
+    "reviewCount": 129,
+    "coupon": false,
+    "category": "rocket",
+    "image": "https://via.placeholder.com/300?text=Product+13",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+13"
+    ],
+    "options": [],
+    "description": "<p>상품 13 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "14",
+    "name": "MiniMarket 상품 14",
+    "price": 176000,
+    "originalPrice": 176000,
+    "stock": 21,
+    "shipping": "dawn",
+    "rating": 4.1,
+    "reviewCount": 141,
+    "coupon": false,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+14",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+14"
+    ],
+    "options": [
+      {
+        "optionId": "opt14_1",
+        "label": "Black / S",
+        "stock": 7,
+        "priceDelta": 0
+      },
+      {
+        "optionId": "opt14_2",
+        "label": "White / M",
+        "stock": 6,
+        "priceDelta": 1000
+      }
+    ],
+    "description": "<p>상품 14 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "15",
+    "name": "MiniMarket 상품 15",
+    "price": 133000,
+    "originalPrice": 133000,
+    "stock": 29,
+    "shipping": "dawn",
+    "rating": 3.6,
+    "reviewCount": 66,
+    "coupon": false,
+    "category": "dawn",
+    "image": "https://via.placeholder.com/300?text=Product+15",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+15"
+    ],
+    "options": [],
+    "description": "<p>상품 15 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "16",
+    "name": "MiniMarket 상품 16",
+    "price": 163000,
+    "originalPrice": 163000,
+    "stock": 10,
+    "shipping": "dawn",
+    "rating": 4.2,
+    "reviewCount": 32,
+    "coupon": false,
+    "category": "qa",
+    "image": "https://via.placeholder.com/300?text=Product+16",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+16"
+    ],
+    "options": [],
+    "description": "<p>상품 16 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "17",
+    "name": "MiniMarket 상품 17",
+    "price": 138000,
+    "originalPrice": 138000,
+    "stock": 31,
+    "shipping": "rocket",
+    "rating": 4.3,
+    "reviewCount": 47,
+    "coupon": false,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+17",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+17"
+    ],
+    "options": [],
+    "description": "<p>상품 17 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "18",
+    "name": "MiniMarket 상품 18",
+    "price": 68000,
+    "originalPrice": 68000,
+    "stock": 22,
+    "shipping": "dawn",
+    "rating": 5,
+    "reviewCount": 38,
+    "coupon": false,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+18",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+18"
+    ],
+    "options": [],
+    "description": "<p>상품 18 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "19",
+    "name": "MiniMarket 상품 19",
+    "price": 186000,
+    "originalPrice": 186000,
+    "stock": 0,
+    "shipping": "normal",
+    "rating": 4.1,
+    "reviewCount": 57,
+    "coupon": false,
+    "category": "rocket",
+    "image": "https://via.placeholder.com/300?text=Product+19",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+19"
+    ],
+    "options": [],
+    "description": "<p>상품 19 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "20",
+    "name": "MiniMarket 상품 20",
+    "price": 195000,
+    "originalPrice": 195000,
+    "stock": 14,
+    "shipping": "rocket",
+    "rating": 4.1,
+    "reviewCount": 154,
+    "coupon": false,
+    "category": "dawn",
+    "image": "https://via.placeholder.com/300?text=Product+20",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+20"
+    ],
+    "options": [],
+    "description": "<p>상품 20 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "21",
+    "name": "MiniMarket 상품 21",
+    "price": 81000,
+    "originalPrice": 98000,
+    "stock": 3,
+    "shipping": "normal",
+    "rating": 4.0,
+    "reviewCount": 137,
+    "coupon": false,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+21",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+21"
+    ],
+    "options": [],
+    "description": "<p>상품 21 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "22",
+    "name": "MiniMarket 상품 22",
+    "price": 9000,
+    "originalPrice": 14000,
+    "stock": 27,
+    "shipping": "normal",
+    "rating": 3.4,
+    "reviewCount": 161,
+    "coupon": false,
+    "category": "qa",
+    "image": "https://via.placeholder.com/300?text=Product+22",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+22"
+    ],
+    "options": [],
+    "description": "<p>상품 22 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "23",
+    "name": "MiniMarket 상품 23",
+    "price": 161000,
+    "originalPrice": 180000,
+    "stock": 8,
+    "shipping": "rocket",
+    "rating": 4.3,
+    "reviewCount": 160,
+    "coupon": false,
+    "category": "qa",
+    "image": "https://via.placeholder.com/300?text=Product+23",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+23"
+    ],
+    "options": [],
+    "description": "<p>상품 23 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "24",
+    "name": "MiniMarket 상품 24",
+    "price": 64000,
+    "originalPrice": 64000,
+    "stock": 3,
+    "shipping": "dawn",
+    "rating": 3.8,
+    "reviewCount": 84,
+    "coupon": false,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+24",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+24"
+    ],
+    "options": [
+      {
+        "optionId": "opt24_1",
+        "label": "Black / S",
+        "stock": 11,
+        "priceDelta": 1000
+      },
+      {
+        "optionId": "opt24_2",
+        "label": "White / M",
+        "stock": 3,
+        "priceDelta": 2000
+      },
+      {
+        "optionId": "opt24_3",
+        "label": "Navy / L",
+        "stock": 6,
+        "priceDelta": 1000
+      }
+    ],
+    "description": "<p>상품 24 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "25",
+    "name": "MiniMarket 상품 25",
+    "price": 13000,
+    "originalPrice": 13000,
+    "stock": 18,
+    "shipping": "normal",
+    "rating": 4.7,
+    "reviewCount": 165,
+    "coupon": true,
+    "category": "qa",
+    "image": "https://via.placeholder.com/300?text=Product+25",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+25"
+    ],
+    "options": [],
+    "description": "<p>상품 25 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "26",
+    "name": "MiniMarket 상품 26",
+    "price": 12000,
+    "originalPrice": 39000,
+    "stock": 12,
+    "shipping": "rocket",
+    "rating": 4.6,
+    "reviewCount": 111,
+    "coupon": false,
+    "category": "dawn",
+    "image": "https://via.placeholder.com/300?text=Product+26",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+26"
+    ],
+    "options": [],
+    "description": "<p>상품 26 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "27",
+    "name": "MiniMarket 상품 27",
+    "price": 113000,
+    "originalPrice": 113000,
+    "stock": 9,
+    "shipping": "rocket",
+    "rating": 3.1,
+    "reviewCount": 52,
+    "coupon": false,
+    "category": "qa",
+    "image": "https://via.placeholder.com/300?text=Product+27",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+27"
+    ],
+    "options": [],
+    "description": "<p>상품 27 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "28",
+    "name": "MiniMarket 상품 28",
+    "price": 191000,
+    "originalPrice": 191000,
+    "stock": 39,
+    "shipping": "dawn",
+    "rating": 3.3,
+    "reviewCount": 0,
+    "coupon": false,
+    "category": "rocket",
+    "image": "https://via.placeholder.com/300?text=Product+28",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+28"
+    ],
+    "options": [],
+    "description": "<p>상품 28 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "29",
+    "name": "MiniMarket 상품 29",
+    "price": 184000,
+    "originalPrice": 191000,
+    "stock": 28,
+    "shipping": "rocket",
+    "rating": 5,
+    "reviewCount": 23,
+    "coupon": false,
+    "category": "dawn",
+    "image": "https://via.placeholder.com/300?text=Product+29",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+29"
+    ],
+    "options": [],
+    "description": "<p>상품 29 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "30",
+    "name": "MiniMarket 상품 30",
+    "price": 118000,
+    "originalPrice": 131000,
+    "stock": 15,
+    "shipping": "normal",
+    "rating": 4.6,
+    "reviewCount": 99,
+    "coupon": false,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+30",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+30"
+    ],
+    "options": [],
+    "description": "<p>상품 30 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "31",
+    "name": "MiniMarket 상품 31",
+    "price": 79000,
+    "originalPrice": 79000,
+    "stock": 11,
+    "shipping": "rocket",
+    "rating": 4.4,
+    "reviewCount": 36,
+    "coupon": true,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+31",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+31"
+    ],
+    "options": [],
+    "description": "<p>상품 31 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "32",
+    "name": "MiniMarket 상품 32",
+    "price": 41000,
+    "originalPrice": 67000,
+    "stock": 2,
+    "shipping": "normal",
+    "rating": 4.3,
+    "reviewCount": 143,
+    "coupon": false,
+    "category": "rocket",
+    "image": "https://via.placeholder.com/300?text=Product+32",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+32"
+    ],
+    "options": [],
+    "description": "<p>상품 32 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "33",
+    "name": "MiniMarket 상품 33",
+    "price": 162000,
+    "originalPrice": 162000,
+    "stock": 10,
+    "shipping": "dawn",
+    "rating": 3.7,
+    "reviewCount": 177,
+    "coupon": false,
+    "category": "dawn",
+    "image": "https://via.placeholder.com/300?text=Product+33",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+33"
+    ],
+    "options": [],
+    "description": "<p>상품 33 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "34",
+    "name": "MiniMarket 상품 34",
+    "price": 148000,
+    "originalPrice": 148000,
+    "stock": 16,
+    "shipping": "dawn",
+    "rating": 5,
+    "reviewCount": 118,
+    "coupon": false,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+34",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+34"
+    ],
+    "options": [
+      {
+        "optionId": "opt34_1",
+        "label": "Black / S",
+        "stock": 4,
+        "priceDelta": 2000
+      },
+      {
+        "optionId": "opt34_2",
+        "label": "White / M",
+        "stock": 5,
+        "priceDelta": 2000
+      },
+      {
+        "optionId": "opt34_3",
+        "label": "Navy / L",
+        "stock": 5,
+        "priceDelta": 0
+      }
+    ],
+    "description": "<p>상품 34 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "35",
+    "name": "MiniMarket 상품 35",
+    "price": 113000,
+    "originalPrice": 137000,
+    "stock": 18,
+    "shipping": "rocket",
+    "rating": 4.5,
+    "reviewCount": 12,
+    "coupon": true,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+35",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+35"
+    ],
+    "options": [
+      {
+        "optionId": "opt35_1",
+        "label": "Black / S",
+        "stock": 3,
+        "priceDelta": 0
+      },
+      {
+        "optionId": "opt35_2",
+        "label": "White / M",
+        "stock": 0,
+        "priceDelta": 0
+      }
+    ],
+    "description": "<p>상품 35 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "36",
+    "name": "MiniMarket 상품 36",
+    "price": 23000,
+    "originalPrice": 23000,
+    "stock": 18,
+    "shipping": "normal",
+    "rating": 4.3,
+    "reviewCount": 78,
+    "coupon": false,
+    "category": "rocket",
+    "image": "https://via.placeholder.com/300?text=Product+36",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+36"
+    ],
+    "options": [],
+    "description": "<p>상품 36 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "37",
+    "name": "MiniMarket 상품 37",
+    "price": 40000,
+    "originalPrice": 40000,
+    "stock": 24,
+    "shipping": "rocket",
+    "rating": 3.6,
+    "reviewCount": 0,
+    "coupon": false,
+    "category": "dawn",
+    "image": "https://via.placeholder.com/300?text=Product+37",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+37"
+    ],
+    "options": [],
+    "description": "<p>상품 37 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "38",
+    "name": "MiniMarket 상품 38",
+    "price": 122000,
+    "originalPrice": 143000,
+    "stock": 5,
+    "shipping": "dawn",
+    "rating": 3.7,
+    "reviewCount": 102,
+    "coupon": false,
+    "category": "qa",
+    "image": "https://via.placeholder.com/300?text=Product+38",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+38"
+    ],
+    "options": [],
+    "description": "<p>상품 38 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "39",
+    "name": "MiniMarket 상품 39",
+    "price": 132000,
+    "originalPrice": 158000,
+    "stock": 22,
+    "shipping": "normal",
+    "rating": 4.3,
+    "reviewCount": 81,
+    "coupon": false,
+    "category": "rocket",
+    "image": "https://via.placeholder.com/300?text=Product+39",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+39"
+    ],
+    "options": [],
+    "description": "<p>상품 39 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "40",
+    "name": "MiniMarket 상품 40",
+    "price": 91000,
+    "originalPrice": 102000,
+    "stock": 31,
+    "shipping": "rocket",
+    "rating": 4.9,
+    "reviewCount": 148,
+    "coupon": false,
+    "category": "shoes",
+    "image": "https://via.placeholder.com/300?text=Product+40",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+40"
+    ],
+    "options": [
+      {
+        "optionId": "opt40_1",
+        "label": "Black / 250",
+        "stock": 0,
+        "priceDelta": 1000
+      },
+      {
+        "optionId": "opt40_2",
+        "label": "White / 260",
+        "stock": 5,
+        "priceDelta": 1000
+      }
+    ],
+    "description": "<p>상품 40 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "41",
+    "name": "MiniMarket 상품 41",
+    "price": 125000,
+    "originalPrice": 147000,
+    "stock": 5,
+    "shipping": "dawn",
+    "rating": 3.8,
+    "reviewCount": 74,
+    "coupon": true,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+41",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+41"
+    ],
+    "options": [],
+    "description": "<p>상품 41 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "42",
+    "name": "MiniMarket 상품 42",
+    "price": 34000,
+    "originalPrice": 61000,
+    "stock": 0,
+    "shipping": "normal",
+    "rating": 4.9,
+    "reviewCount": 43,
+    "coupon": true,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+42",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+42"
+    ],
+    "options": [],
+    "description": "<p>상품 42 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "43",
+    "name": "MiniMarket 상품 43",
+    "price": 56000,
+    "originalPrice": 56000,
+    "stock": 16,
+    "shipping": "normal",
+    "rating": 4.6,
+    "reviewCount": 0,
+    "coupon": false,
+    "category": "shoes",
+    "image": "https://via.placeholder.com/300?text=Product+43",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+43"
+    ],
+    "options": [
+      {
+        "optionId": "opt43_1",
+        "label": "Black / 250",
+        "stock": 5,
+        "priceDelta": 1000
+      },
+      {
+        "optionId": "opt43_2",
+        "label": "White / 260",
+        "stock": 6,
+        "priceDelta": 2000
+      },
+      {
+        "optionId": "opt43_3",
+        "label": "Navy / 270",
+        "stock": 1,
+        "priceDelta": 0
+      },
+      {
+        "optionId": "opt43_4",
+        "label": "Gray / 280",
+        "stock": 4,
+        "priceDelta": 0
+      }
+    ],
+    "description": "<p>상품 43 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "44",
+    "name": "MiniMarket 상품 44",
+    "price": 13000,
+    "originalPrice": 13000,
+    "stock": 17,
+    "shipping": "rocket",
+    "rating": 3.6,
+    "reviewCount": 89,
+    "coupon": false,
+    "category": "rocket",
+    "image": "https://via.placeholder.com/300?text=Product+44",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+44"
+    ],
+    "options": [],
+    "description": "<p>상품 44 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "45",
+    "name": "MiniMarket 상품 45",
+    "price": 65000,
+    "originalPrice": 65000,
+    "stock": 29,
+    "shipping": "normal",
+    "rating": 3.3,
+    "reviewCount": 80,
+    "coupon": false,
+    "category": "dawn",
+    "image": "https://via.placeholder.com/300?text=Product+45",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+45"
+    ],
+    "options": [],
+    "description": "<p>상품 45 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "46",
+    "name": "MiniMarket 상품 46",
+    "price": 101000,
+    "originalPrice": 118000,
+    "stock": 8,
+    "shipping": "normal",
+    "rating": 4.7,
+    "reviewCount": 128,
+    "coupon": false,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+46",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+46"
+    ],
+    "options": [],
+    "description": "<p>상품 46 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "47",
+    "name": "MiniMarket 상품 47",
+    "price": 90000,
+    "originalPrice": 104000,
+    "stock": 22,
+    "shipping": "rocket",
+    "rating": 3.6,
+    "reviewCount": 110,
+    "coupon": false,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+47",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+47"
+    ],
+    "options": [
+      {
+        "optionId": "opt47_1",
+        "label": "Black / S",
+        "stock": 1,
+        "priceDelta": 1000
+      },
+      {
+        "optionId": "opt47_2",
+        "label": "White / M",
+        "stock": 0,
+        "priceDelta": 0
+      },
+      {
+        "optionId": "opt47_3",
+        "label": "Navy / L",
+        "stock": 3,
+        "priceDelta": 1000
+      }
+    ],
+    "description": "<p>상품 47 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "48",
+    "name": "MiniMarket 상품 48",
+    "price": 73000,
+    "originalPrice": 73000,
+    "stock": 27,
+    "shipping": "normal",
+    "rating": 3.4,
+    "reviewCount": 148,
+    "coupon": false,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+48",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+48"
+    ],
+    "options": [],
+    "description": "<p>상품 48 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "49",
+    "name": "MiniMarket 상품 49",
+    "price": 79000,
+    "originalPrice": 79000,
+    "stock": 34,
+    "shipping": "normal",
+    "rating": 3.3,
+    "reviewCount": 106,
+    "coupon": true,
+    "category": "dawn",
+    "image": "https://via.placeholder.com/300?text=Product+49",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+49"
+    ],
+    "options": [],
+    "description": "<p>상품 49 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "50",
+    "name": "MiniMarket 상품 50",
+    "price": 177000,
+    "originalPrice": 198000,
+    "stock": 16,
+    "shipping": "dawn",
+    "rating": 4.1,
+    "reviewCount": 190,
+    "coupon": true,
+    "category": "shoes",
+    "image": "https://via.placeholder.com/300?text=Product+50",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+50"
+    ],
+    "options": [
+      {
+        "optionId": "opt50_1",
+        "label": "Black / 250",
+        "stock": 8,
+        "priceDelta": 0
+      },
+      {
+        "optionId": "opt50_2",
+        "label": "White / 260",
+        "stock": 5,
+        "priceDelta": 0
+      },
+      {
+        "optionId": "opt50_3",
+        "label": "Navy / 270",
+        "stock": 7,
+        "priceDelta": 2000
+      },
+      {
+        "optionId": "opt50_4",
+        "label": "Gray / 280",
+        "stock": 4,
+        "priceDelta": 0
+      }
+    ],
+    "description": "<p>상품 50 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "51",
+    "name": "MiniMarket 상품 51",
+    "price": 165000,
+    "originalPrice": 178000,
+    "stock": 15,
+    "shipping": "dawn",
+    "rating": 3.6,
+    "reviewCount": 155,
+    "coupon": false,
+    "category": "shoes",
+    "image": "https://via.placeholder.com/300?text=Product+51",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+51"
+    ],
+    "options": [
+      {
+        "optionId": "opt51_1",
+        "label": "Black / 250",
+        "stock": 8,
+        "priceDelta": 2000
+      },
+      {
+        "optionId": "opt51_2",
+        "label": "White / 260",
+        "stock": 8,
+        "priceDelta": 0
+      }
+    ],
+    "description": "<p>상품 51 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "52",
+    "name": "MiniMarket 상품 52",
+    "price": 122000,
+    "originalPrice": 147000,
+    "stock": 31,
+    "shipping": "rocket",
+    "rating": 4.9,
+    "reviewCount": 47,
+    "coupon": false,
+    "category": "dawn",
+    "image": "https://via.placeholder.com/300?text=Product+52",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+52"
+    ],
+    "options": [],
+    "description": "<p>상품 52 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "53",
+    "name": "MiniMarket 상품 53",
+    "price": 96000,
+    "originalPrice": 96000,
+    "stock": 19,
+    "shipping": "dawn",
+    "rating": 3.9,
+    "reviewCount": 83,
+    "coupon": false,
+    "category": "rocket",
+    "image": "https://via.placeholder.com/300?text=Product+53",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+53"
+    ],
+    "options": [],
+    "description": "<p>상품 53 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "54",
+    "name": "MiniMarket 상품 54",
+    "price": 13000,
+    "originalPrice": 13000,
+    "stock": 1,
+    "shipping": "normal",
+    "rating": 4.3,
+    "reviewCount": 156,
+    "coupon": false,
+    "category": "shoes",
+    "image": "https://via.placeholder.com/300?text=Product+54",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+54"
+    ],
+    "options": [
+      {
+        "optionId": "opt54_1",
+        "label": "Black / 250",
+        "stock": 6,
+        "priceDelta": 1000
+      },
+      {
+        "optionId": "opt54_2",
+        "label": "White / 260",
+        "stock": 3,
+        "priceDelta": 0
+      }
+    ],
+    "description": "<p>상품 54 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "55",
+    "name": "MiniMarket 상품 55",
+    "price": 13000,
+    "originalPrice": 13000,
+    "stock": 7,
+    "shipping": "rocket",
+    "rating": 4.5,
+    "reviewCount": 58,
+    "coupon": true,
+    "category": "rocket",
+    "image": "https://via.placeholder.com/300?text=Product+55",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+55"
+    ],
+    "options": [],
+    "description": "<p>상품 55 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "56",
+    "name": "MiniMarket 상품 56",
+    "price": 62000,
+    "originalPrice": 62000,
+    "stock": 27,
+    "shipping": "dawn",
+    "rating": 3.5,
+    "reviewCount": 48,
+    "coupon": false,
+    "category": "shoes",
+    "image": "https://via.placeholder.com/300?text=Product+56",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+56"
+    ],
+    "options": [],
+    "description": "<p>상품 56 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "57",
+    "name": "MiniMarket 상품 57",
+    "price": 60000,
+    "originalPrice": 69000,
+    "stock": 13,
+    "shipping": "normal",
+    "rating": 5,
+    "reviewCount": 93,
+    "coupon": true,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+57",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+57"
+    ],
+    "options": [
+      {
+        "optionId": "opt57_1",
+        "label": "Black / S",
+        "stock": 6,
+        "priceDelta": 0
+      },
+      {
+        "optionId": "opt57_2",
+        "label": "White / M",
+        "stock": 3,
+        "priceDelta": 2000
+      },
+      {
+        "optionId": "opt57_3",
+        "label": "Navy / L",
+        "stock": 3,
+        "priceDelta": 2000
+      },
+      {
+        "optionId": "opt57_4",
+        "label": "Gray / XL",
+        "stock": 3,
+        "priceDelta": 0
+      }
+    ],
+    "description": "<p>상품 57 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "58",
+    "name": "MiniMarket 상품 58",
+    "price": 100000,
+    "originalPrice": 122000,
+    "stock": 27,
+    "shipping": "normal",
+    "rating": 4.4,
+    "reviewCount": 157,
+    "coupon": false,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+58",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+58"
+    ],
+    "options": [],
+    "description": "<p>상품 58 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "59",
+    "name": "MiniMarket 상품 59",
+    "price": 26000,
+    "originalPrice": 26000,
+    "stock": 7,
+    "shipping": "rocket",
+    "rating": 4.3,
+    "reviewCount": 135,
+    "coupon": true,
+    "category": "rocket",
+    "image": "https://via.placeholder.com/300?text=Product+59",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+59"
+    ],
+    "options": [],
+    "description": "<p>상품 59 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "60",
+    "name": "MiniMarket 상품 60",
+    "price": 158000,
+    "originalPrice": 158000,
+    "stock": 12,
+    "shipping": "rocket",
+    "rating": 4.4,
+    "reviewCount": 0,
+    "coupon": false,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+60",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+60"
+    ],
+    "options": [],
+    "description": "<p>상품 60 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "61",
+    "name": "MiniMarket 상품 61",
+    "price": 36000,
+    "originalPrice": 61000,
+    "stock": 4,
+    "shipping": "rocket",
+    "rating": 4.2,
+    "reviewCount": 83,
+    "coupon": false,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+61",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+61"
+    ],
+    "options": [],
+    "description": "<p>상품 61 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "62",
+    "name": "MiniMarket 상품 62",
+    "price": 15000,
+    "originalPrice": 15000,
+    "stock": 30,
+    "shipping": "rocket",
+    "rating": 3.9,
+    "reviewCount": 149,
+    "coupon": false,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+62",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+62"
+    ],
+    "options": [],
+    "description": "<p>상품 62 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "63",
+    "name": "MiniMarket 상품 63",
+    "price": 34000,
+    "originalPrice": 34000,
+    "stock": 23,
+    "shipping": "normal",
+    "rating": 3.8,
+    "reviewCount": 118,
+    "coupon": false,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+63",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+63"
+    ],
+    "options": [],
+    "description": "<p>상품 63 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "64",
+    "name": "MiniMarket 상품 64",
+    "price": 121000,
+    "originalPrice": 134000,
+    "stock": 18,
+    "shipping": "normal",
+    "rating": 4.4,
+    "reviewCount": 117,
+    "coupon": true,
+    "category": "shoes",
+    "image": "https://via.placeholder.com/300?text=Product+64",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+64"
+    ],
+    "options": [
+      {
+        "optionId": "opt64_1",
+        "label": "Black / 250",
+        "stock": 4,
+        "priceDelta": 0
+      },
+      {
+        "optionId": "opt64_2",
+        "label": "White / 260",
+        "stock": 0,
+        "priceDelta": 0
+      }
+    ],
+    "description": "<p>상품 64 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "65",
+    "name": "MiniMarket 상품 65",
+    "price": 10000,
+    "originalPrice": 10000,
+    "stock": 0,
+    "shipping": "dawn",
+    "rating": 3.6,
+    "reviewCount": 32,
+    "coupon": false,
+    "category": "qa",
+    "image": "https://via.placeholder.com/300?text=Product+65",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+65"
+    ],
+    "options": [],
+    "description": "<p>상품 65 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "66",
+    "name": "MiniMarket 상품 66",
+    "price": 91000,
+    "originalPrice": 91000,
+    "stock": 27,
+    "shipping": "dawn",
+    "rating": 4.2,
+    "reviewCount": 116,
+    "coupon": false,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+66",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+66"
+    ],
+    "options": [],
+    "description": "<p>상품 66 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "67",
+    "name": "MiniMarket 상품 67",
+    "price": 115000,
+    "originalPrice": 115000,
+    "stock": 0,
+    "shipping": "rocket",
+    "rating": 3.8,
+    "reviewCount": 1,
+    "coupon": false,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+67",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+67"
+    ],
+    "options": [],
+    "description": "<p>상품 67 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "68",
+    "name": "MiniMarket 상품 68",
+    "price": 198000,
+    "originalPrice": 205000,
+    "stock": 18,
+    "shipping": "rocket",
+    "rating": 4.0,
+    "reviewCount": 9,
+    "coupon": true,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+68",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+68"
+    ],
+    "options": [],
+    "description": "<p>상품 68 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "69",
+    "name": "MiniMarket 상품 69",
+    "price": 113000,
+    "originalPrice": 113000,
+    "stock": 12,
+    "shipping": "normal",
+    "rating": 4.1,
+    "reviewCount": 53,
+    "coupon": false,
+    "category": "qa",
+    "image": "https://via.placeholder.com/300?text=Product+69",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+69"
+    ],
+    "options": [],
+    "description": "<p>상품 69 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "70",
+    "name": "MiniMarket 상품 70",
+    "price": 157000,
+    "originalPrice": 157000,
+    "stock": 27,
+    "shipping": "rocket",
+    "rating": 4.7,
+    "reviewCount": 190,
+    "coupon": false,
+    "category": "dawn",
+    "image": "https://via.placeholder.com/300?text=Product+70",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+70"
+    ],
+    "options": [],
+    "description": "<p>상품 70 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "71",
+    "name": "MiniMarket 상품 71",
+    "price": 27000,
+    "originalPrice": 50000,
+    "stock": 24,
+    "shipping": "dawn",
+    "rating": 4.2,
+    "reviewCount": 43,
+    "coupon": false,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+71",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+71"
+    ],
+    "options": [],
+    "description": "<p>상품 71 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "72",
+    "name": "MiniMarket 상품 72",
+    "price": 87000,
+    "originalPrice": 87000,
+    "stock": 19,
+    "shipping": "rocket",
+    "rating": 4.0,
+    "reviewCount": 42,
+    "coupon": false,
+    "category": "rocket",
+    "image": "https://via.placeholder.com/300?text=Product+72",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+72"
+    ],
+    "options": [],
+    "description": "<p>상품 72 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "73",
+    "name": "MiniMarket 상품 73",
+    "price": 91000,
+    "originalPrice": 97000,
+    "stock": 3,
+    "shipping": "dawn",
+    "rating": 4.6,
+    "reviewCount": 218,
+    "coupon": false,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+73",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+73"
+    ],
+    "options": [],
+    "description": "<p>상품 73 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "74",
+    "name": "MiniMarket 상품 74",
+    "price": 29000,
+    "originalPrice": 40000,
+    "stock": 29,
+    "shipping": "rocket",
+    "rating": 3.7,
+    "reviewCount": 47,
+    "coupon": false,
+    "category": "apparel",
+    "image": "https://via.placeholder.com/300?text=Product+74",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+74"
+    ],
+    "options": [
+      {
+        "optionId": "opt74_1",
+        "label": "Black / S",
+        "stock": 1,
+        "priceDelta": 1000
+      },
+      {
+        "optionId": "opt74_2",
+        "label": "White / M",
+        "stock": 2,
+        "priceDelta": 2000
+      },
+      {
+        "optionId": "opt74_3",
+        "label": "Navy / L",
+        "stock": 3,
+        "priceDelta": 2000
+      }
+    ],
+    "description": "<p>상품 74 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "75",
+    "name": "MiniMarket 상품 75",
+    "price": 39000,
+    "originalPrice": 39000,
+    "stock": 2,
+    "shipping": "normal",
+    "rating": 4.7,
+    "reviewCount": 32,
+    "coupon": false,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+75",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+75"
+    ],
+    "options": [],
+    "description": "<p>상품 75 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "76",
+    "name": "MiniMarket 상품 76",
+    "price": 91000,
+    "originalPrice": 91000,
+    "stock": 25,
+    "shipping": "dawn",
+    "rating": 3.9,
+    "reviewCount": 62,
+    "coupon": true,
+    "category": "shoes",
+    "image": "https://via.placeholder.com/300?text=Product+76",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+76"
+    ],
+    "options": [],
+    "description": "<p>상품 76 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "77",
+    "name": "MiniMarket 상품 77",
+    "price": 81000,
+    "originalPrice": 81000,
+    "stock": 32,
+    "shipping": "dawn",
+    "rating": 4.9,
+    "reviewCount": 107,
+    "coupon": true,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+77",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+77"
+    ],
+    "options": [],
+    "description": "<p>상품 77 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "78",
+    "name": "MiniMarket 상품 78",
+    "price": 40000,
+    "originalPrice": 40000,
+    "stock": 19,
+    "shipping": "dawn",
+    "rating": 3.9,
+    "reviewCount": 11,
+    "coupon": true,
+    "category": "rocket",
+    "image": "https://via.placeholder.com/300?text=Product+78",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+78"
+    ],
+    "options": [],
+    "description": "<p>상품 78 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "79",
+    "name": "MiniMarket 상품 79",
+    "price": 48000,
+    "originalPrice": 48000,
+    "stock": 8,
+    "shipping": "dawn",
+    "rating": 3.4,
+    "reviewCount": 47,
+    "coupon": false,
+    "category": "goods",
+    "image": "https://via.placeholder.com/300?text=Product+79",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+79"
+    ],
+    "options": [],
+    "description": "<p>상품 79 상세 설명 (목업)</p>"
+  },
+  {
+    "id": "80",
+    "name": "MiniMarket 상품 80",
+    "price": 88000,
+    "originalPrice": 88000,
+    "stock": 28,
+    "shipping": "normal",
+    "rating": 5,
+    "reviewCount": 35,
+    "coupon": false,
+    "category": "rocket",
+    "image": "https://via.placeholder.com/300?text=Product+80",
+    "images": [
+      "https://via.placeholder.com/600?text=Product+80"
+    ],
+    "options": [],
+    "description": "<p>상품 80 상세 설명 (목업)</p>"
+  }
+]

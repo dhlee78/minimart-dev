@@ -1,16 +1,14 @@
 {
-  "name": "minimart-mock-api-ui-v2",
-  "version": "2.0.0",
-  "private": true,
-  "type": "module",
+  "name": "minimarket-fullstack",
+  "version": "1.0.0",
+  "main": "server.js",
+  "type": "commonjs",
   "scripts": {
-    "dev": "node server.js",
-    "start": "node server.js",
-    "seed:products": "node tools/seed-products.js",
-    "seed:orders": "node tools/seed-orders.js"
+    "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "cors": "^2.8.5"
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "uuid": "^9.0.1"
   }
 }

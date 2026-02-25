@@ -1,468 +1,697 @@
-import express from "express";
-import cors from "cors";
-import fs from "fs";
-import path from "path";
-import crypto from "crypto";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const express = require("express");
+const cors = require("cors");
+const { v4: uuid } = require("uuid");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Request ID for tracing (helps QA + debugging)
+
+// ---- RequestId + Error helper (Global Error Format v1) ----
 app.use((req,res,next)=>{
-  const rid = req.get("X-Request-Id") || crypto.randomUUID();
-  req.requestId = rid;
-  res.setHeader("X-Request-Id", rid);
+  req.requestId = req.headers["x-request-id"] || uuid();
+  res.setHeader("X-Request-Id", req.requestId);
   next();
 });
 
-const DB_PATH = path.join(__dirname, "db.json");
+function sendError(req,res,status,code,message,details){
+  const payload = {
+    timestamp: new Date().toISOString(),
+    status,
+    code,
+    message,
+    ...(details ? { details } : {}),
+    path: req.originalUrl || req.path || ""
+  };
+  // server log policy
+  const userId = (req.user && req.user.id) ? req.user.id : null;
+  const log = {
+    level: "error",
+    requestId: req.requestId,
+    userId,
+    errorCode: code,
+    status,
+    path: payload.path,
+  };
+  console.error(JSON.stringify(log));
+  return res.status(status).json(payload);
+}
 
-function readDB(){
-  return JSON.parse(fs.readFileSync(DB_PATH, "utf-8"));
+function asyncHandler(fn){
+  return (req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
 }
-function writeDB(db){
-  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), "utf-8");
-}
-function log(db, type, meta={}){
-  db.audit.unshift({ id: crypto.randomUUID(), at: new Date().toISOString(), type, meta });
-  db.audit = db.audit.slice(0, 200); // keep last 200
-}
-function discountedPrice(p){
-  const d = parseInt(p.discount || 0, 10);
-  if(!d) return p.price;
-  return Math.round(p.price * (100 - d) / 100);
-}
-function shippingFee(subtotal){ return subtotal >= 50000 ? 0 : 3000; }
 
-function authToken(req){
+// ---- Data store (in-memory for mock) ----
+const PRODUCTS_PATH = path.join(__dirname, "data", "products.json");
+let products = JSON.parse(fs.readFileSync(PRODUCTS_PATH, "utf-8"));
+function persistProducts(){
+  fs.writeFileSync(PRODUCTS_PATH, JSON.stringify(products, null, 2), "utf-8");
+}
+
+// sessions
+const refreshSessions = new Map(); // refreshToken -> { userId, email, exp }
+const accessSessions = new Map();  // accessToken -> { userId, email, exp }
+
+// per-user stores
+const carts = new Map();     // userId -> [{...cartItem}]
+const wishlists = new Map(); // userId -> [{productId, addedAt, updatedAt}]
+const orders = new Map();    // userId -> [order]
+
+// recent search (simple global, can be per-user later)
+let recentSearch = [];
+
+function nowISO(){ return new Date().toISOString(); }
+function isEmail(v){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v); }
+function randToken(prefix){
+  const chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let s="";
+  for(let i=0;i<32;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return `${prefix}.${s}.${Date.now()}`; // "JWT string" mock
+}
+function authRequired(req,res,next){
   const h = req.headers["authorization"] || "";
-  if(typeof h === "string" && h.toLowerCase().startsWith("bearer ")){
-    return h.slice(7).trim();
+  const m = /^Bearer\s+(.+)$/.exec(h);
+  if(!m) return sendError(req,res,401,"AUTH_TOKEN_EXPIRED","인증이 필요합니다.");
+  const tok = m[1];
+  const sess = accessSessions.get(tok);
+  if(!sess) return sendError(req,res,401,"AUTH_TOKEN_EXPIRED","인증이 필요합니다.");
+  if(Date.now() > sess.exp){
+    accessSessions.delete(tok);
+    return sendError(req,res,401,"AUTH_TOKEN_EXPIRED","토큰이 만료되었습니다.");
   }
-  const t = req.headers["x-auth-token"];
-  if(typeof t === "string" && t.trim()) return t.trim();
-  return null;
-}
-
-function requireAuth(req,res,next){
-  const token = authToken(req);
-  if(!token) return res.status(401).json({ ok:false, error:"UNAUTHORIZED", message:"로그인이 필요합니다." });
-  const db = readDB();
-  const sess = db.sessions.find(s => s.token === token);
-  if(!sess) return res.status(401).json({ ok:false, error:"INVALID_SESSION", message:"세션이 만료되었거나 유효하지 않습니다." });
-  req.token = token;
-  req.session = sess;
-  req.db = db;
+  req.user = { id: sess.userId, email: sess.email };
+  req.accessToken = tok;
   next();
 }
 
-function requireAdmin(req,res,next){
-  const token = authToken(req);
-  if(!token) return res.status(401).json({ ok:false, error:"UNAUTHORIZED", message:"로그인이 필요합니다." });
-  const db = readDB();
-  const sess = db.sessions.find(s => s.token === token);
-  if(!sess) return res.status(401).json({ ok:false, error:"INVALID_SESSION", message:"세션이 만료되었거나 유효하지 않습니다." });
-  const user = db.users.find(u => u.id === sess.userId);
-  if(!user || user.role !== "admin") return res.status(403).json({ ok:false, error:"FORBIDDEN", message:"관리자 권한이 필요합니다." });
-  req.token = token;
-  req.session = sess;
-  req.user = user;
-  req.db = db;
-  next();
-}
-
-app.get("/api/health",(req,res)=>res.json({ ok:true, ts: Date.now(), version: 2 }));
-
-/* ---- Products ---- */
-app.get("/api/products",(req,res)=>{
-  const db = readDB();
-  let list = [...db.products];
-
-  const { cat, q, ship, min, max, rate, inStock, sort, page, perPage } = req.query;
-
-  if(typeof cat === "string" && cat !== "all") list = list.filter(p => p.cat === cat);
-  if(typeof ship === "string" && ship !== "all") list = list.filter(p => p.ship === ship);
-  if(typeof q === "string" && q.trim()){
-    const t = q.trim().toLowerCase();
-    list = list.filter(p => (p.name || "").toLowerCase().includes(t));
+// ---- 1. Auth API ----
+app.post("/auth/login", (req,res)=>{
+  const { email, password } = req.body || {};
+  if(!email || !password || !isEmail(email) || String(password).length < 8){
+    return sendError(req,res,400,"AUTH_INVALID_FORMAT","이메일/비밀번호 형식을 확인해주세요.");
+  }
+  if(String(email).toLowerCase() === "test@fail.com"){
+    return sendError(req,res,401,"AUTH_INVALID_CREDENTIALS","이메일 또는 비밀번호가 올바르지 않습니다.");
   }
 
-  const nMin = parseInt(typeof min === "string" ? min : "0", 10);
-  const nMax = parseInt(typeof max === "string" ? max : "0", 10);
-  if(!Number.isNaN(nMin) && nMin > 0) list = list.filter(p => discountedPrice(p) >= nMin);
-  if(!Number.isNaN(nMax) && nMax > 0) list = list.filter(p => discountedPrice(p) <= nMax);
+  const user = { id: "mock-user", email: String(email).toLowerCase() };
+  const accessToken = randToken("access");
+  const refreshToken = randToken("refresh");
+  accessSessions.set(accessToken, { userId: user.id, email: user.email, exp: Date.now() + 5*60*1000 }); // 5m
+  refreshSessions.set(refreshToken, { userId: user.id, email: user.email, exp: Date.now() + 7*24*60*60*1000 }); // 7d
+  return res.json({ accessToken, refreshToken, user });
+});
 
-  const nRate = parseFloat(typeof rate === "string" ? rate : "0");
-  if(!Number.isNaN(nRate) && nRate > 0) list = list.filter(p => p.rating >= nRate);
+app.post("/auth/refresh", (req,res)=>{
+  const { refreshToken } = req.body || {};
+  if(!refreshToken || typeof refreshToken !== "string"){
+    return sendError(req,res,400,"AUTH_INVALID_FORMAT","refreshToken 형식을 확인해주세요.");
+  }
+  const sess = refreshSessions.get(refreshToken);
+  if(!sess){
+    return sendError(req,res,401,"AUTH_REFRESH_EXPIRED","refreshToken이 만료되었거나 유효하지 않습니다.");
+  }
+  if(Date.now() > sess.exp){
+    refreshSessions.delete(refreshToken);
+    return sendError(req,res,401,"AUTH_REFRESH_EXPIRED","refreshToken이 만료되었습니다.");
+  }
+  const accessToken = randToken("access");
+  accessSessions.set(accessToken, { userId: sess.userId, email: sess.email, exp: Date.now() + 5*60*1000 });
+  return res.json({ accessToken });
+});
 
-  if(typeof inStock === "string" && (inStock === "1" || inStock.toLowerCase() === "true")){
-    list = list.filter(p => p.stock > 0);
+app.post("/auth/logout", authRequired, (req,res)=>{
+  // invalidate access token (refresh invalidation optional)
+  accessSessions.delete(req.accessToken);
+  return res.status(204).end();
+});
+
+app.get("/me", authRequired, (req,res)=>{
+  return res.json({ id: req.user.id, email: req.user.email });
+});
+
+// ---- 2. Products API ----
+function clampNonNegative(n){ return Math.max(0, Number.isFinite(n)?n:0); }
+
+app.get("/products", (req,res)=>{
+  let {
+    page=1, perPage=20, category, keyword, sort,
+    minPrice, maxPrice, rating, shipping,
+    freeShipping, inStock
+  } = req.query;
+
+  page = Math.max(1, parseInt(page,10) || 1);
+  perPage = Math.max(1, Math.min(100, parseInt(perPage,10) || 20));
+
+  let items = products.slice();
+
+  if(category && category !== "all"){
+    items = items.filter(p => String(p.category||"") === String(category));
+  }
+  if(keyword){
+    const k = String(keyword).toLowerCase();
+    items = items.filter(p => String(p.name).toLowerCase().includes(k));
+  }
+  if(shipping){
+    items = items.filter(p => p.shipping === shipping);
+  }
+  if(minPrice != null && minPrice !== ""){
+    const mn = parseInt(minPrice,10);
+    if(Number.isFinite(mn)) items = items.filter(p => (p.price||0) >= mn);
+  }
+  if(maxPrice != null && maxPrice !== ""){
+    const mx = parseInt(maxPrice,10);
+    if(Number.isFinite(mx)) items = items.filter(p => (p.price||0) <= mx);
+  }
+  if(rating != null && rating !== ""){
+    const r = parseFloat(rating);
+    if(Number.isFinite(r)) items = items.filter(p => (p.rating||0) >= r);
+  }
+  if(String(freeShipping).toLowerCase() === "true"){
+    items = items.filter(p => (p.price||0) >= 50000);
+  }
+  if(String(inStock).toLowerCase() === "true"){
+    items = items.filter(p => (p.stock||0) > 0);
   }
 
-  switch(sort){
-    case "price-asc": list.sort((a,b)=> discountedPrice(a)-discountedPrice(b)); break;
-    case "price-desc": list.sort((a,b)=> discountedPrice(b)-discountedPrice(a)); break;
-    case "rating": list.sort((a,b)=> (b.rating||0)-(a.rating||0)); break;
-    case "reviews": list.sort((a,b)=> (b.reviews||0)-(a.reviews||0)); break;
-    default: break;
+  // sort
+  const s = sort || "reco";
+  if(s === "price-asc") items.sort((a,b)=>(a.price||0)-(b.price||0));
+  else if(s === "price-desc") items.sort((a,b)=>(b.price||0)-(a.price||0));
+  else if(s === "rating") items.sort((a,b)=>(b.rating||0)-(a.rating||0));
+  else if(s === "reviews") items.sort((a,b)=>(b.reviewCount||0)-(a.reviewCount||0));
+  else { // reco
+    items.sort((a,b)=> (b.reviewCount||0) - (a.reviewCount||0));
   }
 
-  const p = Math.max(1, parseInt(typeof page === "string" ? page : "1", 10) || 1);
-  const pp = Math.min(60, Math.max(1, parseInt(typeof perPage === "string" ? perPage : "12", 10) || 12));
-  const total = list.length;
-  const totalPages = Math.max(1, Math.ceil(total / pp));
-  const pageClamped = Math.min(totalPages, p);
-
-  const items = list.slice((pageClamped-1)*pp, (pageClamped-1)*pp + pp).map(x => ({
-    ...x,
-    finalPrice: discountedPrice(x),
+  // normalize stock<0 -> 0
+  items = items.map(p => ({
+    id: String(p.id),
+    name: String(p.name),
+    price: clampNonNegative(p.price),
+    originalPrice: clampNonNegative(p.originalPrice),
+    stock: clampNonNegative(p.stock),
+    shipping: p.shipping,
+    rating: p.rating ?? 0,
+    reviewCount: p.reviewCount ?? 0,
+    coupon: !!p.coupon,
+    image: p.image
   }));
 
-  res.json({ ok:true, total, totalPages, page: pageClamped, perPage: pp, items });
+  const totalCount = items.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / perPage));
+  const start = (page-1)*perPage;
+  const paged = items.slice(start, start+perPage);
+  res.json({ items: paged, totalPages, page, totalCount });
 });
 
-app.get("/api/products/:id",(req,res)=>{
-  const db = readDB();
-  const p = db.products.find(x=>x.id===req.params.id);
-  if(!p) return res.status(404).json({ ok:false, error:"NOT_FOUND", message:"상품을 찾을 수 없습니다." });
-  res.json({ ok:true, item: { ...p, finalPrice: discountedPrice(p) } });
+app.get("/products/:id", (req,res)=>{
+  const p = products.find(x => String(x.id) === String(req.params.id));
+  if(!p) return sendError(req,res,404,"PRODUCT_NOT_FOUND","존재하지 않는 상품입니다.");
+  const detail = {
+    id: String(p.id),
+    name: String(p.name),
+    price: clampNonNegative(p.price),
+    originalPrice: clampNonNegative(p.originalPrice),
+    stock: clampNonNegative(p.stock),
+    shipping: p.shipping,
+    rating: p.rating ?? 0,
+    reviewCount: p.reviewCount ?? 0,
+    coupon: !!p.coupon,
+    images: Array.isArray(p.images) ? p.images : [p.image].filter(Boolean),
+    options: Array.isArray(p.options) ? p.options.map(o => ({
+      optionId: String(o.optionId),
+      label: String(o.label),
+      stock: clampNonNegative(o.stock),
+      priceDelta: Number(o.priceDelta)||0
+    })) : [],
+    description: String(p.description || "")
+  };
+  res.json(detail);
 });
 
-/* ---- Coupons ---- */
-app.get("/api/coupons",(req,res)=>{
-  const db = readDB();
-  const list = (db.coupons||[]).filter(c=>c.active);
-  res.json({ ok:true, items:list });
+// ---- 3. Search API ----
+app.get("/products/autocomplete", (req,res)=>{
+  const keyword = String(req.query.keyword || "").trim();
+  if(!keyword) return res.json({ suggestions: [] });
+  if(keyword.length>50) return sendError(req,res,400,"SEARCH_INVALID_QUERY","검색어 형식을 확인해주세요.");
+  const k = keyword.toLowerCase();
+  const suggestions = products
+    .map(p=>p.name)
+    .filter(n => String(n).toLowerCase().includes(k))
+    .slice(0, 10);
+  res.json({ suggestions });
 });
 
-/* ---- Auth ---- */
-app.post("/api/auth/login",(req,res)=>{
-  const { email, password } = req.body || {};
-  if(!email || !password) return res.status(400).json({ ok:false, error:"BAD_REQUEST", message:"email/password가 필요합니다." });
-  const db = readDB();
-  const user = db.users.find(u => u.email === email && u.password === password);
-  if(!user) return res.status(401).json({ ok:false, error:"INVALID_CREDENTIALS", message:"이메일 또는 비밀번호가 올바르지 않습니다." });
-
-  const token = crypto.randomUUID();
-  db.sessions.push({ token, userId: user.id, at: new Date().toISOString() });
-  db.carts[token] = db.carts[token] || [];
-  db.orders[token] = db.orders[token] || [];
-  log(db, "LOGIN", { userId: user.id });
-  writeDB(db);
-  res.json({ ok:true, token, user: { id:user.id, email:user.email, name:user.name, role:user.role||"user", points: user.points||0 } });
+app.get("/search/recent", (req,res)=>{
+  res.json({ items: recentSearch.slice(0, 10) });
 });
 
-app.post("/api/auth/logout", requireAuth, (req,res)=>{
-  const db = req.db;
-  db.sessions = db.sessions.filter(s => s.token !== req.token);
-  log(db, "LOGOUT", { userId: req.session.userId });
-  writeDB(db);
-  res.json({ ok:true });
+app.post("/search/recent", (req,res)=>{
+  const keyword = String((req.body||{}).keyword || "").trim();
+  if(!keyword || keyword.length>50) return sendError(req,res,400,"SEARCH_INVALID_QUERY","검색어 형식을 확인해주세요.");
+  // keep unique recent, most recent first
+  recentSearch = [keyword, ...recentSearch.filter(x=>x!==keyword)].slice(0, 10);
+  res.status(204).end();
 });
 
-/* ---- Cart ---- */
-app.get("/api/cart", requireAuth, (req,res)=>{
-  const db = req.db;
-  const cart = db.carts[req.token] || [];
-  const items = cart.map(line=>{
-    const p = db.products.find(x=>x.id===line.productId);
-    return {
-      ...line,
-      product: p ? { id:p.id, name:p.name, ship:p.ship, price:p.price, finalPrice: discountedPrice(p), stock:p.stock } : null
-    };
-  });
-  res.json({ ok:true, items });
+app.delete("/search/recent", (req,res)=>{
+  recentSearch = [];
+  res.status(204).end();
 });
 
-app.post("/api/cart/items", requireAuth, (req,res)=>{
-  const { productId, qty, opt } = req.body || {};
-  const q = Math.max(1, parseInt(qty || 1, 10) || 1);
-
-  const db = req.db;
-  const p = db.products.find(x => x.id === productId);
-  if(!p) return res.status(404).json({ ok:false, error:"NOT_FOUND", message:"상품을 찾을 수 없습니다." });
-  if(p.stock === 0) return res.status(409).json({ ok:false, error:"OUT_OF_STOCK", message:"품절 상품입니다." });
-
-  const normOpt = opt && (opt.size || opt.color) ? { size: opt.size || undefined, color: opt.color || undefined } : null;
-  const key = JSON.stringify({ productId, opt: normOpt });
-
-  const cart = db.carts[req.token] || [];
-  const found = cart.find(x => JSON.stringify({ productId:x.productId, opt:x.opt || null }) === key);
-  const next = (found?.qty || 0) + q;
-  if(next > p.stock) return res.status(409).json({ ok:false, error:"INSUFFICIENT_STOCK", message:`재고가 부족합니다. (최대 ${p.stock}개)` });
-
-  if(found){
-    found.qty = next;
-  }else{
-    cart.push({ lineId: crypto.randomUUID(), productId, qty: q, opt: normOpt });
-  }
-  db.carts[req.token] = cart;
-  log(db, "CART_ADD", { userId:req.session.userId, productId, qty:q });
-  writeDB(db);
-  res.json({ ok:true });
-});
-
-app.patch("/api/cart/items/:lineId", requireAuth, (req,res)=>{
-  const { qty } = req.body || {};
-  const q = Math.max(1, parseInt(qty || 1, 10) || 1);
-
-  const db = req.db;
-  const cart = db.carts[req.token] || [];
-  const line = cart.find(x => x.lineId === req.params.lineId);
-  if(!line) return res.status(404).json({ ok:false, error:"NOT_FOUND", message:"장바구니 라인을 찾을 수 없습니다." });
-
-  const p = db.products.find(x => x.id === line.productId);
-  if(!p) return res.status(404).json({ ok:false, error:"NOT_FOUND", message:"상품을 찾을 수 없습니다." });
-  if(q > p.stock) return res.status(409).json({ ok:false, error:"INSUFFICIENT_STOCK", message:`재고가 부족합니다. (최대 ${p.stock}개)` });
-
-  line.qty = q;
-  log(db, "CART_QTY", { userId:req.session.userId, lineId: req.params.lineId, qty:q });
-  writeDB(db);
-  res.json({ ok:true });
-});
-
-app.delete("/api/cart/items/:lineId", requireAuth, (req,res)=>{
-  const db = req.db;
-  const cart = db.carts[req.token] || [];
-  db.carts[req.token] = cart.filter(x => x.lineId !== req.params.lineId);
-  log(db, "CART_REMOVE", { userId:req.session.userId, lineId:req.params.lineId });
-  writeDB(db);
-  res.json({ ok:true });
-});
-
-/* ---- Checkout / Orders ----
-   현실적인 필드: address, payment, coupon, points
-   status flow: 결제완료 -> 상품준비중 -> 배송중 -> 배송완료
-   cancel/refund endpoints (admin)
-*/
-function validateAddress(a){
-  if(!a) return "address가 필요합니다.";
-  if(!a.zip || !a.line1) return "address.zip/line1이 필요합니다.";
-  return null;
+// ---- helpers for cart/checkout ----
+function getCart(userId){
+  if(!carts.has(userId)) carts.set(userId, []);
+  return carts.get(userId);
 }
-function calcCouponDiscount(db, couponCode, subtotal){
-  if(!couponCode) return { ok:true, discount:0, reason:null };
-  const c = (db.coupons||[]).find(x=>x.code===couponCode);
-  if(!c) return { ok:false, discount:0, reason:"INVALID_COUPON" };
-  if(!c.active) return { ok:false, discount:0, reason:"COUPON_INACTIVE" };
-  if(subtotal < (c.minSubtotal||0)) return { ok:false, discount:0, reason:"COUPON_MIN_NOT_MET" };
-  let d = 0;
-  if(c.type==="PERCENT"){
-    d = Math.floor(subtotal * (c.value/100));
-  }else{
-    d = c.value || 0;
-  }
-  const maxD = c.maxDiscount ?? d;
-  d = Math.min(d, maxD);
-  return { ok:true, discount:d, reason:null, coupon:c };
+function findProduct(productId){
+  return products.find(p => String(p.id) === String(productId));
+}
+function getOption(p, optionId){
+  if(!optionId) return null;
+  const opts = Array.isArray(p.options) ? p.options : [];
+  return opts.find(o => String(o.optionId) === String(optionId)) || null;
+}
+function computeCartSummary(items, couponApplied=false){
+  const totalPrice = items.reduce((a,it)=>a + (it.price*it.quantity), 0);
+  const shippingFee = (items.length===0) ? 0 : (totalPrice >= 50000 ? 0 : 3000);
+  const discount = couponApplied ? Math.floor(totalPrice * 0.10) : 0;
+  const finalPrice = totalPrice + shippingFee - discount;
+  return { totalPrice, shippingFee, discount, finalPrice };
 }
 
-app.post("/api/orders/checkout", requireAuth, (req,res)=>{
-  const { address, payment, couponCode, pointsUse, memo } = req.body || {};
-  const addrErr = validateAddress(address);
-  if(addrErr) return res.status(400).json({ ok:false, error:"BAD_REQUEST", message: addrErr });
+// ---- 4. Cart API ----
+app.get("/cart", authRequired, (req,res)=>{
+  const items = getCart(req.user.id);
+  res.json({ items, summary: computeCartSummary(items, false) });
+});
 
-  if(!payment || !payment.method) return res.status(400).json({ ok:false, error:"BAD_REQUEST", message:"payment.method가 필요합니다." });
+app.post("/cart", authRequired, (req,res)=>{
+  const { productId, optionId=null, quantity=1 } = req.body || {};
+  if(!productId){
+    return sendError(req,res,400,"CART_INVALID_QUANTITY","잘못된 요청입니다.");
+  }
+  const p = findProduct(productId);
+  if(!p) return sendError(req,res,404,"PRODUCT_NOT_FOUND","존재하지 않는 상품입니다.");
 
-  const db = req.db;
-  const user = db.users.find(u=>u.id===req.session.userId);
-  const cart = db.carts[req.token] || [];
-  if(cart.length === 0) return res.status(400).json({ ok:false, error:"EMPTY_CART", message:"장바구니가 비어있습니다." });
-
-  let subtotal = 0;
-  const lines = [];
-
-  for(const line of cart){
-    const p = db.products.find(x=>x.id===line.productId);
-    if(!p) return res.status(404).json({ ok:false, error:"NOT_FOUND", message:"상품을 찾을 수 없습니다." });
-    if(p.stock === 0) return res.status(409).json({ ok:false, error:"OUT_OF_STOCK", message:`품절: ${p.name}` });
-    if(line.qty > p.stock) return res.status(409).json({ ok:false, error:"INSUFFICIENT_STOCK", message:`재고 부족: ${p.name} (최대 ${p.stock}개)` });
-
-    const unit = discountedPrice(p);
-    subtotal += unit * line.qty;
-    lines.push({ ...line, name:p.name, unit, ship:p.ship });
+  const q = parseInt(quantity,10);
+  if(!Number.isFinite(q) || q < 1){
+    return sendError(req,res,422,"CART_INVALID_QUANTITY","수량은 1 이상이어야 합니다.", { minQuantity: 1 });
   }
 
-  const shipFee = shippingFee(subtotal);
-  // coupon discount (applies to subtotal only for demo)
-  const c = calcCouponDiscount(db, couponCode, subtotal);
-  if(!c.ok) return res.status(400).json({ ok:false, error:c.reason, message:"쿠폰을 적용할 수 없습니다." });
-
-  const wantPoints = Math.max(0, parseInt(pointsUse||0,10) || 0);
-  const userPoints = user?.points || 0;
-  if(wantPoints > userPoints) return res.status(400).json({ ok:false, error:"POINTS_EXCEED", message:`보유 포인트(${userPoints})를 초과했습니다.` });
-
-  const discountTotal = c.discount + wantPoints;
-  const total = Math.max(0, subtotal + shipFee - discountTotal);
-
-  // deduct stock
-  for(const line of cart){
-    const p = db.products.find(x=>x.id===line.productId);
-    p.stock = Math.max(0, (p.stock||0) - line.qty);
+  const hasOptions = Array.isArray(p.options) && p.options.length>0;
+  if(hasOptions && (optionId == null || optionId === "")){
+    return sendError(req,res,422,"PRODUCT_OPTION_REQUIRED","옵션을 선택해주세요.", { productId: String(p.id) });
   }
-  // deduct points, and earn points (1% of total)
-  if(user) user.points = Math.max(0, userPoints - wantPoints);
-  const earned = Math.floor(total * 0.01);
-  if(user) user.points += earned;
 
-  const id = crypto.randomUUID();
-  const orderNo = "MM-" + Math.floor(100000 + Math.random()*900000);
-  const order = {
-    id,
-    orderNo,
-    at: new Date().toISOString(),
-    status: "결제완료",
-    customer: { id: user?.id, name: user?.name || "게스트" },
-    address,
-    payment: { method: payment.method, card: payment.card || null, vbank: payment.vbank || null },
-    memo: memo || "",
-    couponCode: couponCode || null,
-    pointsUsed: wantPoints,
-    pointsEarned: earned,
-    subtotal,
-    shipFee,
-    discountTotal,
-    total,
-    lines
+  let stock = clampNonNegative(p.stock);
+  let opt = null;
+  if(hasOptions){
+    opt = getOption(p, optionId);
+    if(!opt) return sendError(req,res,404,"PRODUCT_OPTION_NOT_FOUND","존재하지 않는 옵션입니다.", { productId: String(p.id), optionId: String(optionId) });
+    stock = clampNonNegative(opt.stock);
+  }
+
+  // Duplicate policy
+  const cart = getCart(req.user.id);
+  const dup = cart.find(it => it.productId===String(p.id) && ((it.option && opt) ? it.option.optionId===String(opt.optionId) : (!it.option && !opt)));
+  if(dup){
+    return sendError(req,res,409,"CART_ITEM_DUPLICATE","이미 장바구니에 담긴 상품입니다.", { cartItemId: dup.cartItemId });
+  }
+
+  if(q > stock){
+    return sendError(req,res,409,"CART_STOCK_EXCEEDED","요청 수량이 재고를 초과했습니다.", { availableStock: stock, productId: String(p.id), optionId: opt ? String(opt.optionId) : null });
+  }
+
+  const cartItem = {
+    cartItemId: uuid(),
+    productId: String(p.id),
+    name: String(p.name),
+    price: clampNonNegative(p.price) + (opt ? (Number(opt.priceDelta)||0) : 0),
+    originalPrice: clampNonNegative(p.originalPrice),
+    image: p.image,
+    shipping: p.shipping,
+    stock: stock,
+    quantity: q,
+    option: opt ? { optionId: String(opt.optionId), label: String(opt.label) } : null
   };
 
-  db.orders[req.token] = db.orders[req.token] || [];
-  db.orders[req.token].unshift(order);
-  db.ordersById[id] = order;
-
-  db.carts[req.token] = [];
-  log(db, "CHECKOUT", { userId:req.session.userId, orderId:id, total, couponCode: couponCode||null, pointsUsed: wantPoints });
-
-  writeDB(db);
-  res.json({ ok:true, order });
+  cart.push(cartItem);
+  res.status(201).json(cartItem);
 });
 
-app.get("/api/orders", requireAuth, (req,res)=>{
-  const db = req.db;
-  res.json({ ok:true, items: db.orders[req.token] || [] });
+app.patch("/cart/:cartItemId", authRequired, (req,res)=>{
+  const { quantity } = req.body || {};
+  const cart = getCart(req.user.id);
+  const it = cart.find(x=>x.cartItemId === req.params.cartItemId);
+  if(!it) return sendError(req,res,404,"CART_ITEM_NOT_FOUND","장바구니 항목을 찾을 수 없습니다.", { cartItemId: req.params.cartItemId });
+
+  const q = parseInt(quantity,10);
+  if(!Number.isFinite(q) || q < 1){
+    return sendError(req,res,422,"CART_INVALID_QUANTITY","수량은 1 이상이어야 합니다.", { minQuantity: 1 });
+  }
+
+  const p = findProduct(it.productId);
+  if(!p){
+    it.stock = 0; it.quantity = 0;
+    return res.json(it);
+  }
+
+  const hasOptions = Array.isArray(p.options) && p.options.length>0;
+  let latestStock = clampNonNegative(p.stock);
+  let delta = 0;
+
+  if(hasOptions && it.option && it.option.optionId){
+    const opt = getOption(p, it.option.optionId);
+    if(!opt) return sendError(req,res,422,"CART_OPTION_INVALID","옵션이 유효하지 않습니다.", { cartItemId: it.cartItemId });
+    latestStock = clampNonNegative(opt.stock);
+    delta = Number(opt.priceDelta)||0;
+    it.option = { optionId:String(opt.optionId), label:String(opt.label) };
+  }
+
+  const prevPrice = it.price;
+  it.price = clampNonNegative(p.price) + delta;
+  it.originalPrice = clampNonNegative(p.originalPrice);
+  it.stock = latestStock;
+
+  let newQ = q;
+  let priceChanged = (prevPrice !== it.price);
+
+  if(newQ > latestStock){
+    newQ = latestStock;
+  }
+  it.quantity = newQ;
+
+  // if price changed, notify via header for clients; keep 200 with updated item
+  if(priceChanged){
+    res.setHeader("X-Price-Changed","1");
+  }
+
+  res.json(it);
 });
 
-app.get("/api/orders/:id", requireAuth, (req,res)=>{
-  const db = req.db;
-  const o = db.ordersById[req.params.id];
-  if(!o) return res.status(404).json({ ok:false, error:"NOT_FOUND", message:"주문을 찾을 수 없습니다." });
-  // allow only owner token (simple check)
-  const mine = (db.orders[req.token]||[]).some(x=>x.id===o.id);
-  if(!mine) return res.status(403).json({ ok:false, error:"FORBIDDEN", message:"해당 주문에 접근할 수 없습니다." });
-  res.json({ ok:true, item:o });
+// delete single cart item (extra endpoint for frontend)
+app.delete("/cart/:cartItemId", authRequired, (req,res)=>{
+  const cart = getCart(req.user.id);
+  const next = cart.filter(it => it.cartItemId !== req.params.cartItemId);
+  carts.set(req.user.id, next);
+  res.status(204).end();
 });
 
-/* ---- Admin ---- */
-const statusFlow = ["결제완료","상품준비중","배송중","배송완료"];
-const terminal = ["취소완료","환불완료"];
+// clear cart (extra endpoint)
+app.delete("/cart", authRequired, (req,res)=>{
+  carts.set(req.user.id, []);
+  res.status(204).end();
+});
 
-function canTransition(from, to){
-  if(terminal.includes(from)) return false;
-  if(terminal.includes(to)) return true; // allow admin to set terminal states
-  const i = statusFlow.indexOf(from);
-  const j = statusFlow.indexOf(to);
-  return i !== -1 && j !== -1 && j >= i; // allow forward or same
+app.post("/cart/validate", authRequired, (req,res)=>{
+  const { cartItemIds } = req.body || {};
+  if(!Array.isArray(cartItemIds)) return sendError(req,res,400,"CART_INVALID_QUANTITY","잘못된 요청입니다.");
+
+  const cart = getCart(req.user.id);
+  const adjustments = [];
+
+  for(const id of cartItemIds){
+    const it = cart.find(x=>x.cartItemId === id);
+    if(!it) continue;
+
+    const p = findProduct(it.productId);
+    if(!p){
+      it.stock = 0; it.quantity = 0;
+      adjustments.push({ cartItemId: it.cartItemId, type: "CLAMPED", newQuantity: 0 });
+      continue;
+    }
+
+    const hasOptions = Array.isArray(p.options) && p.options.length>0;
+    let latestStock = clampNonNegative(p.stock);
+    let delta = 0;
+    if(hasOptions && it.option && it.option.optionId){
+      const opt = getOption(p, it.option.optionId);
+      if(!opt) return sendError(req,res,422,"CART_OPTION_INVALID","옵션이 유효하지 않습니다.", { cartItemId: it.cartItemId });
+      latestStock = clampNonNegative(opt.stock);
+      delta = Number(opt.priceDelta)||0;
+      it.option = { optionId:String(opt.optionId), label:String(opt.label) };
+    }
+
+    const prevPrice = it.price;
+    it.price = clampNonNegative(p.price) + delta;
+    it.originalPrice = clampNonNegative(p.originalPrice);
+    it.stock = latestStock;
+
+    if(prevPrice !== it.price){
+      adjustments.push({ cartItemId: it.cartItemId, type: "PRICE_CHANGED", newPrice: it.price });
+    }
+
+    if(it.quantity > latestStock){
+      it.quantity = latestStock;
+      adjustments.push({ cartItemId: it.cartItemId, type: "CLAMPED", newQuantity: latestStock });
+    }
+  }
+
+  res.json({ adjustments });
+});
+
+// ---- 5. Checkout API ----
+app.post("/checkout/quote", authRequired, (req,res)=>{
+  const { cartItemIds, couponApplied } = req.body || {};
+  if(!Array.isArray(cartItemIds)) return sendError(req,res,400,"CHECKOUT_EMPTY_SELECTION","잘못된 요청입니다.");
+  if(cartItemIds.length===0) return sendError(req,res,422,"CHECKOUT_EMPTY_SELECTION","선택 상품이 없습니다.");
+
+  const cart = getCart(req.user.id);
+  const items = cart.filter(it => cartItemIds.includes(it.cartItemId));
+  if(items.length===0) return sendError(req,res,422,"CHECKOUT_EMPTY_SELECTION","선택 상품이 없습니다.");
+
+  // validate against latest
+  const stockIssues=[];
+  const priceIssues=[];
+  for(const it of items){
+    const p = findProduct(it.productId);
+    if(!p){ stockIssues.push({ cartItemId: it.cartItemId, availableStock: 0 }); continue; }
+    const hasOptions = Array.isArray(p.options) && p.options.length>0;
+    let latestStock = clampNonNegative(p.stock);
+    let delta = 0;
+    if(hasOptions && it.option && it.option.optionId){
+      const opt = getOption(p, it.option.optionId);
+      latestStock = clampNonNegative(opt ? opt.stock : 0);
+      delta = Number(opt ? opt.priceDelta : 0)||0;
+    }
+    const latestPrice = clampNonNegative(p.price)+delta;
+    if(latestPrice !== it.price) priceIssues.push({ cartItemId: it.cartItemId, newPrice: latestPrice });
+    if(it.quantity > latestStock) stockIssues.push({ cartItemId: it.cartItemId, availableStock: latestStock });
+  }
+
+  if(stockIssues.length){
+    return sendError(req,res,409,"CHECKOUT_STOCK_CHANGED","주문 직전 재고가 변경되었습니다.", { stockIssues });
+  }
+  if(priceIssues.length){
+    return sendError(req,res,409,"CHECKOUT_PRICE_CHANGED","주문 직전 가격이 변경되었습니다.", { priceIssues });
+  }
+
+  const summary = computeCartSummary(items, !!couponApplied);
+  res.json(summary);
+});
+
+// ---- 6. Orders API ----
+function statusForServer(createdAt, currentStatus){
+  // Server-managed mock: advance status based on elapsed time since createdAt
+  const diff = (Date.now() - new Date(createdAt).getTime())/1000;
+  if(diff < 10) return "PAID";
+  if(diff < 20) return "SHIPPING";
+  return "DELIVERED";
 }
 
-app.get("/api/admin/overview", requireAdmin, (req,res)=>{
-  const db = req.db;
-  const orders = Object.values(db.ordersById||{});
-  const byStatus = {};
-  for(const o of orders) byStatus[o.status] = (byStatus[o.status]||0)+1;
-  const lowStock = (db.products||[]).filter(p=>p.stock>0 && p.stock<=3).slice(0,20);
-  res.json({ ok:true, stats:{ products: db.products.length, orders: orders.length, users: db.users.length }, byStatus, lowStock });
-});
+app.post("/orders", authRequired, (req,res)=>{
+  const { cartItemIds, couponApplied } = req.body || {};
+  if(!Array.isArray(cartItemIds)) return sendError(req,res,400,"ORDER_CREATION_FAILED","잘못된 요청입니다.");
+  if(cartItemIds.length===0) return sendError(req,res,422,"ORDER_CREATION_FAILED","주문 생성에 실패했습니다.");
 
-app.get("/api/admin/products", requireAdmin, (req,res)=>{
-  const db = req.db;
-  res.json({ ok:true, items: db.products });
-});
+  const cart = getCart(req.user.id);
+  const items = cart.filter(it => cartItemIds.includes(it.cartItemId));
+  if(items.length===0) return sendError(req,res,422,"ORDER_CREATION_FAILED","주문 생성에 실패했습니다.");
 
-app.patch("/api/admin/products/:id", requireAdmin, (req,res)=>{
-  const db = req.db;
-  const p = db.products.find(x=>x.id===req.params.id);
-  if(!p) return res.status(404).json({ ok:false, error:"NOT_FOUND", message:"상품을 찾을 수 없습니다." });
-  const { price, stock, discount, ship, name } = req.body || {};
-  if(price !== undefined) p.price = Math.max(0, parseInt(price,10) || 0);
-  if(stock !== undefined) p.stock = Math.max(0, parseInt(stock,10) || 0);
-  if(discount !== undefined) p.discount = Math.max(0, Math.min(90, parseInt(discount,10) || 0));
-  if(ship !== undefined) p.ship = ship;
-  if(name !== undefined) p.name = String(name);
-  log(db,"ADMIN_PRODUCT_PATCH",{ admin:req.user.id, productId:p.id });
-  writeDB(db);
-  res.json({ ok:true, item:p });
-});
-
-app.get("/api/admin/orders", requireAdmin, (req,res)=>{
-  const db = req.db;
-  const list = Object.values(db.ordersById||{}).sort((a,b)=> (b.at||"").localeCompare(a.at||""));
-  res.json({ ok:true, items:list });
-});
-
-app.patch("/api/admin/orders/:id/status", requireAdmin, (req,res)=>{
-  const db = req.db;
-  const o = db.ordersById[req.params.id];
-  if(!o) return res.status(404).json({ ok:false, error:"NOT_FOUND", message:"주문을 찾을 수 없습니다." });
-  const { status } = req.body || {};
-  if(!status) return res.status(400).json({ ok:false, error:"BAD_REQUEST", message:"status가 필요합니다." });
-  if(!canTransition(o.status, status)) return res.status(409).json({ ok:false, error:"INVALID_TRANSITION", message:`상태 변경 불가: ${o.status} -> ${status}` });
-  o.status = status;
-  log(db,"ADMIN_STATUS",{ admin:req.user.id, orderId:o.id, status });
-  writeDB(db);
-  res.json({ ok:true, item:o });
-});
-
-app.post("/api/admin/orders/:id/cancel", requireAdmin, (req,res)=>{
-  const db = req.db;
-  const o = db.ordersById[req.params.id];
-  if(!o) return res.status(404).json({ ok:false, error:"NOT_FOUND", message:"주문을 찾을 수 없습니다." });
-  if(terminal.includes(o.status)) return res.status(409).json({ ok:false, error:"ALREADY_TERMINAL", message:"이미 종료된 주문입니다." });
-  // restore stock (simple)
-  for(const line of o.lines){
-    const p = db.products.find(x=>x.id===line.productId);
-    if(p) p.stock += line.qty;
+  // validate + clamp (stock changes cause error for order creation)
+  for(const it of items){
+    const p = findProduct(it.productId);
+    const hasOptions = p && Array.isArray(p.options) && p.options.length>0;
+    let latestStock = p ? clampNonNegative(p.stock) : 0;
+    let delta = 0;
+    if(p && hasOptions && it.option && it.option.optionId){
+      const opt = getOption(p, it.option.optionId);
+      latestStock = clampNonNegative(opt ? opt.stock : 0);
+      delta = Number(opt ? opt.priceDelta : 0) || 0;
+      it.option = opt ? { optionId:String(opt.optionId), label:String(opt.label) } : it.option;
+    }
+    const latestPrice = p ? clampNonNegative(p.price)+delta : it.price;
+    if(latestPrice !== it.price){
+      return sendError(req,res,409,"CHECKOUT_PRICE_CHANGED","주문 직전 가격이 변경되었습니다.", { cartItemId: it.cartItemId, newPrice: latestPrice });
+    }
+    if(it.quantity > latestStock){
+      return sendError(req,res,409,"ORDER_STOCK_INSUFFICIENT","주문 시 재고가 부족합니다.", { cartItemId: it.cartItemId, availableStock: latestStock });
+    }
   }
-  o.status = "취소완료";
-  log(db,"ADMIN_CANCEL",{ admin:req.user.id, orderId:o.id });
-  writeDB(db);
-  res.json({ ok:true, item:o });
+
+  const summary = computeCartSummary(items, !!couponApplied);
+
+  // stock deduction (mock)
+  for(const it of items){
+    const p = findProduct(it.productId);
+    if(!p) continue;
+    const hasOptions = Array.isArray(p.options) && p.options.length>0;
+    if(hasOptions && it.option && it.option.optionId){
+      const opt = getOption(p, it.option.optionId);
+      if(opt) opt.stock = clampNonNegative(opt.stock) - it.quantity;
+    }else{
+      p.stock = clampNonNegative(p.stock) - it.quantity;
+    }
+  }
+  persistProducts();
+
+  const order = {
+    orderId: uuid(),
+    createdAt: nowISO(),
+    status: "PAID",
+    ...summary,
+    items: items.map(it => ({
+      id: it.productId,
+      name: it.name,
+      price: it.price,
+      originalPrice: it.originalPrice,
+      image: it.image,
+      quantity: it.quantity,
+      option: it.option ? it.option.label : "",
+      shipping: it.shipping
+    }))
+  };
+
+  if(!orders.has(req.user.id)) orders.set(req.user.id, []);
+  orders.get(req.user.id).unshift(order);
+
+  // remove from cart
+  const remaining = cart.filter(it => !cartItemIds.includes(it.cartItemId));
+  carts.set(req.user.id, remaining);
+
+  res.status(201).json({ order });
 });
 
-app.post("/api/admin/orders/:id/refund", requireAdmin, (req,res)=>{
-  const db = req.db;
-  const o = db.ordersById[req.params.id];
-  if(!o) return res.status(404).json({ ok:false, error:"NOT_FOUND", message:"주문을 찾을 수 없습니다." });
-  if(o.status !== "배송완료") return res.status(409).json({ ok:false, error:"REFUND_NOT_ALLOWED", message:"배송완료 상태에서만 환불 처리 가능합니다." });
-  o.status = "환불완료";
-  log(db,"ADMIN_REFUND",{ admin:req.user.id, orderId:o.id });
-  writeDB(db);
-  res.json({ ok:true, item:o });
+app.get("/orders", authRequired, (req,res)=>{
+  let { page=1, perPage=10 } = req.query;
+  page = Math.max(1, parseInt(page,10) || 1);
+  perPage = Math.max(1, Math.min(50, parseInt(perPage,10) || 10));
+
+  const all = (orders.get(req.user.id) || []).slice();
+  // server status managed
+  for(const o of all){
+    o.status = statusForServer(o.createdAt, o.status);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(all.length / perPage));
+  const start = (page-1)*perPage;
+  const items = all.slice(start, start+perPage);
+  res.json({ items, totalPages });
 });
 
-app.get("/api/admin/audit", requireAdmin, (req,res)=>{
-  const db = req.db;
-  res.json({ ok:true, items: db.audit || [] });
+// delete order (extra mock cleanup)
+app.delete("/orders/:orderId", authRequired, (req,res)=>{
+  const list = orders.get(req.user.id) || [];
+  const next = list.filter(o => o.orderId !== req.params.orderId);
+  orders.set(req.user.id, next);
+  res.status(204).end();
 });
 
-/* ---- Debug ---- */
-app.post("/api/debug/reset",(req,res)=>{
-  const db = readDB();
-  db.sessions = [];
-  db.carts = {};
-  db.orders = {};
-  db.ordersById = {};
-  db.audit = [];
-  writeDB(db);
-  res.json({ ok:true, message:"세션/장바구니/주문/감사로그 초기화 (상품/쿠폰/유저는 유지)" });
+// ---- 7. Wishlist API ----
+function getWishlist(userId){
+  if(!wishlists.has(userId)) wishlists.set(userId, []);
+  return wishlists.get(userId);
+}
+
+app.get("/wishlist", authRequired, (req,res)=>{
+  const wl = getWishlist(req.user.id);
+  const items = wl.map(w => {
+    const p = findProduct(w.productId);
+    const product = p ? {
+      id: String(p.id),
+      name: p.name,
+      price: clampNonNegative(p.price),
+      originalPrice: clampNonNegative(p.originalPrice),
+      stock: clampNonNegative(p.stock),
+      shipping: p.shipping,
+      rating: p.rating ?? 0,
+      reviewCount: p.reviewCount ?? 0,
+      coupon: !!p.coupon,
+      image: p.image
+    } : null;
+    return { productId: String(w.productId), addedAt: w.addedAt, product };
+  });
+  res.json({ items });
 });
 
-/* ---- Serve UI ---- */
-app.use("/", express.static(path.join(__dirname, "public")));
+app.post("/wishlist", authRequired, (req,res)=>{
+  const { productId } = req.body || {};
+  if(!productId) return sendError(req,res,400,"WISHLIST_PRODUCT_NOT_FOUND","잘못된 요청입니다.");
+  const p = findProduct(productId);
+  if(!p) return sendError(req,res,404,"WISHLIST_PRODUCT_NOT_FOUND","상품이 삭제되었거나 존재하지 않습니다.", { productId: String(productId) });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, ()=> console.log(`MiniMarket v2 running on http://localhost:${PORT}`));
+  const wl = getWishlist(req.user.id);
+  const i = wl.findIndex(x=>String(x.productId)===String(productId));
+  if(i>=0){
+    return sendError(req,res,409,"WISHLIST_DUPLICATE","이미 찜한 상품입니다.", { productId: String(productId) });
+  }
+  const now = nowISO();
+  wl.unshift({ productId: String(productId), addedAt: now, updatedAt: now });
+  res.status(204).end();
+});
+
+app.delete("/wishlist/:productId", authRequired, (req,res)=>{
+  const wl = getWishlist(req.user.id);
+  const before = wl.length;
+  const next = wl.filter(x=>String(x.productId)!==String(req.params.productId));
+  if(next.length === before){
+    return sendError(req,res,404,"WISHLIST_ITEM_NOT_FOUND","찜 항목이 없습니다.", { productId: String(req.params.productId) });
+  }
+  wishlists.set(req.user.id, next);
+  res.status(204).end();
+});
+
+// clear wishlist (extra endpoint)
+app.delete("/wishlist", authRequired, (req,res)=>{
+  wishlists.set(req.user.id, []);
+  res.status(204).end();
+});
+
+
+
+// ---- Global error handler ----
+app.use((err, req, res, next)=>{
+  const code = err && err.code ? err.code : "SERVER_ERROR";
+  const status = err && err.status ? err.status : 500;
+  const msg = err && err.message ? err.message : "서버 오류가 발생했습니다.";
+  const userId = (req.user && req.user.id) ? req.user.id : null;
+  console.error(JSON.stringify({
+    level:"error",
+    requestId:req.requestId,
+    userId,
+    errorCode:code,
+    stack: (err && err.stack) ? String(err.stack) : null
+  }));
+  if(res.headersSent) return next(err);
+  return res.status(status).json({
+    timestamp: new Date().toISOString(),
+    status,
+    code,
+    message: msg,
+    path: req.originalUrl || req.path || ""
+  });
+});
+
+// ---- Static frontend (same-origin fetch works) ----
+const PUBLIC_DIR = path.join(__dirname, "..", "public");
+app.use(express.static(PUBLIC_DIR));
+
+// Fallback to index
+app.get("/", (req,res)=> res.sendFile(path.join(PUBLIC_DIR, "index.html")));
+
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, ()=> console.log("MiniMarket API+Web running on", PORT));
