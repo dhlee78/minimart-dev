@@ -15,12 +15,12 @@
       <span>MiniMarket</span>
     </a>
 
-    <button class="catbtn" data-open-menu type="button" aria-haspopup="dialog">☰ 전체 카테고리</button>
+    <button class="catbtn" data-open-menu type="button" aria-haspopup="dialog" aria-expanded="false">☰ 전체 카테고리</button>
 
     <div class="search-wrap">
       <div class="search" role="search">
         <span style="color:#9ca3af">🔎</span>
-        <input data-search type="search" placeholder="상품을 검색하세요" aria-label="search" />
+        <input data-search type="search" placeholder="상품을 검색하세요" aria-label="search" / maxlength="50">
         <span class="hint">Ctrl K</span>
       </div>
       <div class="autocomplete" data-autocomplete role="listbox" aria-label="autocomplete"></div>
@@ -51,7 +51,7 @@
   }
 })();
 </script>
-      <a class="action" href="cart.html" style="background:rgba(255,255,255,.22)">
+      <a class="action cartlink" href="cart.html">
         장바구니 <span class="cartbadge" data-cart-badge>0</span>
       </a>
     </div>
@@ -60,6 +60,7 @@
 
 <div class="overlay" data-overlay aria-hidden="true">
   <div class="dialog megamenu" data-dialog role="dialog" aria-modal="true" aria-label="category menu">
+      <button class="mm-close" aria-label="close menu" data-close-menu type="button">×</button>
     <div class="mm-left" data-mm-left></div>
     <div class="mm-right" data-mm-right></div>
   </div>

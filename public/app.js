@@ -820,13 +820,41 @@ function setupAutocomplete(){
   });
 
   input.addEventListener("keydown", (e)=>{
-    const items = Array.from(box.querySelectorAll(".auto-item"));
-    if(!box.classList.contains("show")) return;
-
+    // Esc should close only the panel, keep input value
     if(e.key==="Escape"){
-      box.classList.remove("show"); // keep input value
+      if(box.classList.contains("show")) box.classList.remove("show");
       return;
     }
+
+    // Enter should work even if panel is not open OR items are empty
+    if(e.key==="Enter"){
+      if(ime) return; // IME composition: do not run search
+      const q2=input.value.trim();
+      if(!q2) return; // whitespace-only => no-op
+
+      if(box.classList.contains("show")){
+        const items = Array.from(box.querySelectorAll(".auto-item"));
+        if(activeIndex>=0 && items[activeIndex]){
+          items[activeIndex].click(); // active item wins
+          return;
+        }
+      }
+
+      // no active item (or panel closed): execute search as typed
+      pushRecent(q2);
+      state.q = q2;
+      state.page=1;
+      writeUrlState(false);
+      box.classList.remove("show");
+      applyFilters();
+      document.querySelector("#products")?.scrollIntoView({ behavior:"smooth" });
+      return;
+    }
+
+    // Arrow navigation only when panel is open and items exist
+    if(!box.classList.contains("show")) return;
+
+    const items = Array.from(box.querySelectorAll(".auto-item"));
     if(items.length===0) return;
 
     if(e.key==="ArrowDown"){
@@ -839,22 +867,6 @@ function setupAutocomplete(){
       activeIndex = (activeIndex - 1 + items.length) % items.length; // wrap
       items.forEach((it,i)=>it.classList.toggle("active", i===activeIndex));
       items[activeIndex]?.scrollIntoView({ block:"nearest" });
-    }else if(e.key==="Enter"){
-      if(ime) return; // do not search during IME composition
-      const q2=input.value.trim();
-      if(!q2) return; // whitespace only => no-op
-      if(activeIndex>=0 && items[activeIndex]){
-        items[activeIndex].click();
-        return;
-      }
-      // no active item: execute search as typed
-      pushRecent(q2);
-      state.q = q2;
-      state.page=1;
-      writeUrlState(false);
-      box.classList.remove("show");
-      applyFilters();
-      document.querySelector("#products")?.scrollIntoView({ behavior:"smooth" });
     }
   });
 }
@@ -873,8 +885,10 @@ function setupMegaMenu(){
   let lastFocus = null;
 
   const close = () => {
+    overlay.querySelectorAll("[data-close-menu]").forEach(b=>b.addEventListener("click", close));
     overlay.classList.remove("show");
     overlay.setAttribute("aria-hidden","true");
+    openBtn.setAttribute("aria-expanded","false");
     document.body.style.overflow="";
     untrap?.(); untrap=null;
     lastFocus?.focus?.();
@@ -954,7 +968,9 @@ function setupMegaMenu(){
   };
 
   openBtn.addEventListener("click", ()=>{
+    if(overlay.classList.contains("show")) return;
     lastFocus = document.activeElement;
+    openBtn.setAttribute(\"aria-expanded\",\"true\");
     buildLeft();
     buildRight(state.cat);
     overlay.classList.add("show");
@@ -1431,6 +1447,21 @@ document.addEventListener("DOMContentLoaded", ()=>{
   if(isAuthed()) refreshCart().catch(()=>{});
 
   document.querySelectorAll("[data-logout]").forEach(b=>b.addEventListener("click", logout));
+
+  // Logo click on HOME: treat as "reset reload" (state reset)
+  const logo = document.querySelector('a.logo[href="index.html"]');
+  if(logo){
+    logo.addEventListener("click", (e)=>{
+      const isHome = /(^\/$)|(index\.html$)/.test(location.pathname);
+      if(!isHome) return; // normal navigation
+      e.preventDefault();
+      if(location.search || location.hash){
+        location.href = "index.html";
+      }else{
+        location.reload();
+      }
+    });
+  }
 
   // Ctrl+K focus
   document.addEventListener("keydown", (e)=>{
