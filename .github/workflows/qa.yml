@@ -18,8 +18,10 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Health smoke test
+      - name: Health + API smoke
+        env:
+          QA_BASE_URL: http://localhost:3000
         run: |
           node server.js &
           sleep 2
-          curl -f http://localhost:3000/api/health
+          node scripts/qa-smoke.mjs
