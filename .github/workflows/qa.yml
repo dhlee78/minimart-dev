@@ -21,6 +21,8 @@ jobs:
       - name: Health + API smoke
         env:
           QA_BASE_URL: http://localhost:3000
+          QA_USER: ${{ secrets.QA_USER }}
+          QA_PASS: ${{ secrets.QA_PASS }}
         run: |
           node server.js &
           sleep 2
