@@ -1,3 +1,4 @@
+/* FIXED FOR SPEC COMPLIANCE */
 // MiniMart v5 (풀 옵션 QA 목업)
 // - URL query로 상태 유지
 // - 찜(위시리스트) + 최근 본 상품
@@ -15,6 +16,18 @@ const LS = {
   wishlist:"minimart_wishlist",
   recentlyViewed:"minimart_recently_viewed",
 };
+
+// localStorage write debounce (reduce jank on mobile)
+const __lsTimers = Object.create(null);
+function lsSetDebounced(key, value, delay=150){
+  try{
+    clearTimeout(__lsTimers[key]);
+    __lsTimers[key] = setTimeout(()=> {
+      try{ localStorage.setItem(key, value); }catch(_){}
+    }, delay);
+  }catch(_){}
+}
+
 
 /* ===== Missing helpers (FIX) ===== */
 
@@ -43,7 +56,7 @@ function getViewed(){
   }catch(_){ return []; }
 }
 function setViewed(ids){
-  try{ localStorage.setItem(LS.recentlyViewed, JSON.stringify(ids || [])); }catch(_){}
+  lsSetDebounced(LS.recentlyViewed, JSON.stringify(ids || []));
 }
 function pushViewed(id){
   if(!id) return;
@@ -60,7 +73,7 @@ function getWishlist(){
   }catch(_){ return []; }
 }
 function setWishlist(ids){
-  try{ localStorage.setItem(LS.wishlist, JSON.stringify(ids || [])); }catch(_){}
+  lsSetDebounced(LS.wishlist, JSON.stringify(ids || []));
 }
 function isWished(id){
   return getWishlist().includes(id);
@@ -110,6 +123,32 @@ const API = {
   maxRetries: 2,
 };
 
+let _refreshPromise = null;
+async function refreshAccessToken(){
+  if(_refreshPromise) return _refreshPromise;
+  const rt = getRefreshToken();
+  if(!rt) throw new Error("NO_REFRESH");
+  _refreshPromise = fetch(API.base + "/auth/refresh", {
+    method: "POST",
+    headers: {"Content-Type":"application/json","Accept":"application/json"},
+    body: JSON.stringify({ refreshToken: rt })
+  })
+  .then(async (res)=>{
+    const data = await res.json().catch(()=>null);
+    if(!res.ok){
+      const code = data && data.code ? data.code : "AUTH_REFRESH_EXPIRED";
+      const err = new Error((data && data.message) || "refresh failed");
+      err.code = code; err.status = res.status; err.data = data;
+      throw err;
+    }
+    const t = getTokens() || {};
+    setTokens({ ...t, accessToken: data.accessToken });
+    return data.accessToken;
+  })
+  .finally(()=>{ _refreshPromise = null; });
+  return _refreshPromise;
+}
+
 function getToken(){
   try{
     const a = JSON.parse(localStorage.getItem(LS.auth)||"null");
@@ -154,13 +193,25 @@ async function apiFetch(path, { method="GET", body=null, headers={}, retry=API.m
     const data = isJson ? await res.json().catch(()=>null) : await res.text().catch(()=>null);
 
     if(res.status === 401){
-      // token invalid/expired
+      const code = (data && data.code) ? data.code : "AUTH_TOKEN_EXPIRED";
+      if(code === "AUTH_TOKEN_EXPIRED"){
+        try{
+          await refreshAccessToken();
+          if(retry > 0){
+            return apiFetch(path, { method, body, headers, retry: retry-1 });
+          }
+        }catch(err){
+          // refresh failed -> fallthrough
+        }
+      }
       clearAuth();
       const next = encodeURIComponent(location.pathname.split("/").pop() + location.search);
       syncAuthUI();
-  toast("로그인이 필요합니다.");
+      toast("로그인이 필요합니다.");
       setTimeout(()=>location.href=`login.html?next=${next}`, 500);
-      throw new Error("UNAUTHORIZED");
+      const ex = new Error("UNAUTHORIZED");
+      ex.code = code;
+      throw ex;
     }
     if(!res.ok){
       const msg = (data && data.message) ? data.message : `요청 실패 (${res.status})`;
@@ -182,7 +233,7 @@ async function apiFetch(path, { method="GET", body=null, headers={}, retry=API.m
 }
 
 async function apiLogin(email,password){
-  return apiFetch("/api/auth/login", { method:"POST", body:{ email, password } });
+  return apiFetch("/auth/login", { method:"POST", body:{ email, password } });
 }
 async function apiLogout(){
   try{ await apiFetch("/api/auth/logout", { method:"POST" }); }catch(_){}
@@ -317,6 +368,15 @@ let state = {
 
 function money(n){ return n.toLocaleString("ko-KR")+"원"; }
 
+function productImage(p){
+  const url = p?.image || p?.img || p?.thumbnail || p?.thumb || p?.imageUrl || "";
+  if(url) return url;
+  // lightweight placeholder (SVG data URI)
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="100%" height="100%" fill="#F3F4F6"/><path d="M110 250l60-70 50 55 40-45 90 110H110z" fill="#D1D5DB"/><circle cx="170" cy="160" r="26" fill="#D1D5DB"/><text x="50%" y="85%" text-anchor="middle" font-size="20" fill="#9CA3AF" font-family="sans-serif">MiniMarket</text></svg>`
+  );
+}
+
 /* price helpers */
 function discountedPrice(p){
   if(!p) return 0;
@@ -351,41 +411,73 @@ function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
 /* URL state */
 function readUrlState(){
   const p = new URLSearchParams(location.search);
-  if(p.has("cat")) state.cat = p.get("cat") || "all";
+
+  // Spec keys -> internal state mapping
+  if(p.has("category")) state.cat = p.get("category") || "all";
   if(p.has("sort")) state.sort = p.get("sort") || "reco";
   if(p.has("page")) state.page = parseInt(p.get("page")||"1", 10) || 1;
   if(p.has("view")) state.view = p.get("view")==="list" ? "list" : "grid";
-  if(p.has("q")) state.q = p.get("q") || "";
-  // filters
+  if(p.has("search")) state.q = p.get("search") || "";
+
+  // filters (spec keys)
   if(p.has("min")) state.filters.priceMin = p.get("min") || "";
   if(p.has("max")) state.filters.priceMax = p.get("max") || "";
-  if(p.has("rate")) state.filters.ratingMin = p.get("rate") || "0";
-  if(p.has("ship")) state.filters.shipType = p.get("ship") || "all";
-  if(p.has("free")) state.filters.freeShip = p.get("free")==="1";
-  if(p.has("stock")) state.filters.inStockOnly = p.get("stock")==="1";
+  if(p.has("rating")) state.filters.ratingMin = p.get("rating") || "0";
+  if(p.has("shipping")) state.filters.shipType = p.get("shipping") || "all";
+  if(p.has("freeShipping")) state.filters.freeShip = p.get("freeShipping")==="1" || p.get("freeShipping")==="true";
+  if(p.has("inStock")) state.filters.inStockOnly = p.get("inStock")==="1" || p.get("inStock")==="true";
+
+  // clamp page
+  state.page = Math.min(9999, Math.max(1, state.page||1));
+}
+function __scrollKeyFromUrl(url){
+  // use full path+search as stable key
+  return "minimart_scroll:" + url;
+}
+function __saveScrollForCurrentUrl(){
+  try{
+    sessionStorage.setItem(__scrollKeyFromUrl(location.pathname + location.search), String(window.scrollY||0));
+  }catch(_){}
+}
+function __restoreScrollForUrl(url){
+  try{
+    const v = sessionStorage.getItem(__scrollKeyFromUrl(url));
+    if(v==null) return false;
+    const y = parseInt(v,10);
+    if(!isNaN(y)) window.scrollTo({ top:y, behavior:"auto" });
+    return true;
+  }catch(_){ return false; }
 }
 function writeUrlState(replace=true){
   const p = new URLSearchParams();
-  if(state.cat!=="all") p.set("cat", state.cat);
+
+  // spec keys
+  if(state.cat!=="all") p.set("category", state.cat);
   if(state.sort!=="reco") p.set("sort", state.sort);
   if(state.page!==1) p.set("page", String(state.page));
   if(state.view!=="grid") p.set("view", state.view);
-  if(state.q.trim()) p.set("q", state.q.trim());
-  if(state.filters.priceMin) p.set("min", state.filters.priceMin);
-  if(state.filters.priceMax) p.set("max", state.filters.priceMax);
-  if(state.filters.ratingMin!=="0") p.set("rate", state.filters.ratingMin);
-  if(state.filters.shipType!=="all") p.set("ship", state.filters.shipType);
-  if(state.filters.freeShip) p.set("free","1");
-  if(state.filters.inStockOnly) p.set("stock","1");
+  if(state.q.trim()) p.set("search", state.q.trim());
+
+  if(state.filters.priceMin) p.set("min", String(state.filters.priceMin));
+  if(state.filters.priceMax) p.set("max", String(state.filters.priceMax));
+  if(state.filters.ratingMin!=="0") p.set("rating", String(state.filters.ratingMin));
+  if(state.filters.shipType!=="all") p.set("shipping", String(state.filters.shipType));
+  if(state.filters.freeShip) p.set("freeShipping","1");
+  if(state.filters.inStockOnly) p.set("inStock","1");
+
   const url = location.pathname + (p.toString()?("?"+p.toString()):"");
+
+  // save current scroll before changing URL
+  __saveScrollForCurrentUrl();
+
   if(replace) history.replaceState({}, "", url);
   else history.pushState({}, "", url);
 }
 
 /* persistence */
 function saveState(){
-  localStorage.setItem(LS.view, JSON.stringify({ view: state.view }));
-  localStorage.setItem(LS.filters, JSON.stringify(state.filters));
+  lsSetDebounced(LS.view, JSON.stringify({ view: state.view }));
+  lsSetDebounced(LS.filters, JSON.stringify(state.filters));
 }
 function loadState(){
   try{
@@ -432,7 +524,7 @@ function syncAuthUI(){
 
 // Guest cart (localStorage) helpers
 function getGuestCart(){ try { return JSON.parse(localStorage.getItem(LS.cart)||"[]"); } catch { return []; } }
-function setGuestCart(items){ localStorage.setItem(LS.cart, JSON.stringify(items)); }
+function setGuestCart(items){ lsSetDebounced(LS.cart, JSON.stringify(items)); }
 
 function getCart(){
   if(isAuthed()){
@@ -629,7 +721,7 @@ function totals(){
 
 /* Search recents + autocomplete */
 function getRecents(){ try { return JSON.parse(localStorage.getItem(LS.recents)||"[]"); } catch { return []; } }
-function setRecents(arr){ localStorage.setItem(LS.recents, JSON.stringify(arr.slice(0,10))); }
+function setRecents(arr){ lsSetDebounced(LS.recents, JSON.stringify(arr.slice(0,10))); }
 function pushRecent(q){
   const t=q.trim(); if(!t) return;
   const arr=getRecents().filter(x=>x!==t);
@@ -665,91 +757,137 @@ function setupAutocomplete(){
 
   input.value = state.q || "";
   let activeIndex=-1;
+  let ime=false;
 
-  const suggestions = () => {
-    const q=input.value.trim().toLowerCase();
-    const rec = getRecents();
-    const fromProducts = q.length
-      ? products.filter(p=>p.name.toLowerCase().includes(q)).slice(0,8).map(p=>p.name)
-      : [];
-    const base = q.length ? fromProducts : rec;
-    const uniq = [...new Set(base)].slice(0,8);
-    return { q, items: uniq, isRecents: !q.length };
+  const getRecs = ()=> getRecents().slice(0,8);
+  const getRecommends = (q)=>{
+    const t=q.trim().toLowerCase();
+    if(!t) return [];
+    return [...new Set(products.filter(p=>p.name.toLowerCase().includes(t)).map(p=>p.name))].slice(0,8);
   };
 
   const render = () => {
-    const { q, items, isRecents } = suggestions();
-    if(items.length===0){
+    const q=input.value.trim();
+    if(q.length===0){
       box.classList.remove("show");
+      box.innerHTML = "";
+      activeIndex=-1;
       return;
     }
-    activeIndex = -1;
-    box.innerHTML = `
+    const recents=getRecs();
+    const recommends=getRecommends(q);
+
+    // Always keep panel open for QA even if empty
+    const hasAny = (recents.length + recommends.length) > 0;
+
+    const section = (title, right, items, kind) => `
       <div class="auto-head">
-        <div class="t">${isRecents ? "최근 검색어" : "추천 검색어"}</div>
-        ${isRecents ? `<button type="button" data-clear-recents>전체삭제</button>` : `<span style="color:#9ca3af;font-size:12px">Enter로 검색</span>`}
+        <div class="t">${title}</div>
+        ${right||""}
       </div>
       ${items.map((it, idx)=>`
-        <div class="auto-item" role="option" aria-selected="false" data-auto-item="${idx}">
-          <div class="l"><span style="opacity:.8">${isRecents ? "🕘" : "🔎"}</span> <span>${escapeHtml(it)}</span></div>
-          <div class="k">${q.length? "": "click"}</div>
+        <div class="auto-item" role="option" aria-selected="false" data-auto-kind="${kind}" data-auto-item="${idx}">
+          <div class="l"><span style="opacity:.8">${kind==="recent"?"🕘":"🔎"}</span> <span>${escapeHtml(it)}</span></div>
+          <div class="k">Enter</div>
         </div>
       `).join("")}
     `;
+
+    box.innerHTML = `
+      ${section("최근 검색어", `<button type="button" data-clear-recents>전체삭제</button>`, recents, "recent")}
+      ${section("추천 검색어", "", recommends, "reco")}
+      ${!hasAny ? `<div class="auto-empty">검색 결과가 없습니다.</div>` : ``}
+    `;
     box.classList.add("show");
-    box.querySelectorAll("[data-auto-item]").forEach(el=>el.addEventListener("click", ()=>{
+    activeIndex=-1;
+
+    const allItems = Array.from(box.querySelectorAll(".auto-item"));
+    const pick = (el)=>{
+      const kind = el.getAttribute("data-auto-kind");
       const idx=parseInt(el.getAttribute("data-auto-item"),10);
-      const items2 = suggestions().items;
-      const val = items2[idx];
+      const list = kind==="recent" ? getRecs() : getRecommends(input.value);
+      const val = list[idx];
+      if(!val) return;
       input.value = val;
       box.classList.remove("show");
       pushRecent(val);
       state.q = val;
       state.page = 1;
-      writeUrlState(true);
+      writeUrlState(false);
       applyFilters();
-    }));
+      document.querySelector("#products")?.scrollIntoView({ behavior:"smooth" });
+    };
+
+    allItems.forEach(el=>el.addEventListener("click", ()=>pick(el)));
     box.querySelector("[data-clear-recents]")?.addEventListener("click", ()=>{
       clearRecents();
-      box.classList.remove("show");
+      // keep panel open and show empty UI if needed
+      render();
     });
   };
 
+  input.addEventListener("compositionstart", ()=>{ ime=true; });
+  input.addEventListener("compositionend", ()=>{ ime=false; });
+
   input.addEventListener("focus", render);
-  input.addEventListener("input", ()=>{
-    state.q = input.value;
-    state.page=1;
-    writeUrlState(true);
+  input.addEventListener("input", (e)=>{
+    // max 50 chars
+    if(e.target.value.length>50) e.target.value=e.target.value.slice(0,50);
     render();
-    applyFilters();
   });
+
   document.addEventListener("click", (e)=>{
     if(!box.contains(e.target) && e.target !== input) box.classList.remove("show");
   });
 
   input.addEventListener("keydown", (e)=>{
+    // Esc should close only the panel, keep input value
+    if(e.key==="Escape"){
+      if(box.classList.contains("show")) box.classList.remove("show");
+      return;
+    }
+
+    // Enter should work even if panel is not open OR items are empty
+    if(e.key==="Enter"){
+      if(ime) return; // IME composition: do not run search
+      const q2=input.value.trim();
+      if(!q2) return; // whitespace-only => no-op
+
+      if(box.classList.contains("show")){
+        const items = Array.from(box.querySelectorAll(".auto-item"));
+        if(activeIndex>=0 && items[activeIndex]){
+          items[activeIndex].click(); // active item wins
+          return;
+        }
+      }
+
+      // no active item (or panel closed): execute search as typed
+      pushRecent(q2);
+      state.q = q2;
+      state.page=1;
+      writeUrlState(false);
+      box.classList.remove("show");
+      applyFilters();
+      document.querySelector("#products")?.scrollIntoView({ behavior:"smooth" });
+      return;
+    }
+
+    // Arrow navigation only when panel is open and items exist
+    if(!box.classList.contains("show")) return;
+
     const items = Array.from(box.querySelectorAll(".auto-item"));
-    if(!box.classList.contains("show") || items.length===0) return;
+    if(items.length===0) return;
+
     if(e.key==="ArrowDown"){
       e.preventDefault();
-      activeIndex = Math.min(items.length-1, activeIndex+1);
+      activeIndex = (activeIndex + 1) % items.length; // wrap
       items.forEach((it,i)=>it.classList.toggle("active", i===activeIndex));
       items[activeIndex]?.scrollIntoView({ block:"nearest" });
     }else if(e.key==="ArrowUp"){
       e.preventDefault();
-      activeIndex = Math.max(0, activeIndex-1);
+      activeIndex = (activeIndex - 1 + items.length) % items.length; // wrap
       items.forEach((it,i)=>it.classList.toggle("active", i===activeIndex));
       items[activeIndex]?.scrollIntoView({ block:"nearest" });
-    }else if(e.key==="Enter"){
-      const q2=input.value.trim();
-      pushRecent(q2);
-      state.q = q2;
-      box.classList.remove("show");
-      state.page=1;
-      writeUrlState(true);
-      applyFilters();
-    }else if(e.key==="Escape"){
-      box.classList.remove("show");
     }
   });
 }
@@ -768,8 +906,10 @@ function setupMegaMenu(){
   let lastFocus = null;
 
   const close = () => {
+    overlay.querySelectorAll("[data-close-menu]").forEach(b=>b.addEventListener("click", close));
     overlay.classList.remove("show");
     overlay.setAttribute("aria-hidden","true");
+    openBtn.setAttribute("aria-expanded","false");
     document.body.style.overflow="";
     untrap?.(); untrap=null;
     lastFocus?.focus?.();
@@ -833,13 +973,25 @@ function setupMegaMenu(){
     };
     left.querySelectorAll("[data-mm-cat]").forEach(el=>{
       el.addEventListener("mouseenter", ()=> act(el));
-      el.addEventListener("click", ()=> act(el));
-      el.addEventListener("keydown", (e)=>{ if(e.key==="Enter") act(el); });
+      el.addEventListener("click", ()=>{
+        const cid = el.getAttribute("data-mm-cat");
+        // apply immediately
+        state.cat = cid;
+        state.page=1;
+        writeUrlState(false);
+        close();
+        renderSidebar();
+        applyFilters();
+        document.querySelector("#products")?.scrollIntoView({ behavior:"smooth" });
+      });
+      el.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); el.click(); } });
     });
   };
 
   openBtn.addEventListener("click", ()=>{
+    if(overlay.classList.contains("show")) return;
     lastFocus = document.activeElement;
+    openBtn.setAttribute(\"aria-expanded\",\"true\");
     buildLeft();
     buildRight(state.cat);
     overlay.classList.add("show");
@@ -857,6 +1009,72 @@ function setupMegaMenu(){
     if(e.key==="Escape") close();
   });
 }
+
+
+function setupMobileFilterSheet(){
+  const openBtn = document.querySelector("[data-open-filters]");
+  const overlay = document.querySelector("[data-filter-overlay]");
+  const content = document.querySelector("[data-filter-content]");
+  const closeBtn = document.querySelector("[data-close-filters]");
+  const sidebarWrap = document.querySelector(".sidebarwrap");
+
+  if(!openBtn || !overlay || !content || !sidebarWrap) return;
+
+  let placeholder = document.createElement("div");
+  let moved = false;
+  let untrap = null;
+  let lastFocus = null;
+
+  const open = ()=>{
+    if(overlay.classList.contains("show")) return;
+    lastFocus = document.activeElement;
+
+    // Move actual sidebar DOM into sheet so existing event handlers keep working.
+    if(!moved){
+      sidebarWrap.parentNode.insertBefore(placeholder, sidebarWrap);
+      content.appendChild(sidebarWrap);
+      sidebarWrap.style.display = "block";
+      moved = true;
+    }
+
+    overlay.classList.add("show");
+    overlay.setAttribute("aria-hidden","false");
+    document.body.style.overflow = "hidden";
+
+    untrap?.(); untrap = trapFocus(overlay.querySelector(".fs-sheet"));
+    setTimeout(()=> overlay.querySelector(".fs-close")?.focus(), 0);
+  };
+
+  const close = ()=>{
+    overlay.classList.remove("show");
+    overlay.setAttribute("aria-hidden","true");
+    document.body.style.overflow = "";
+    untrap?.(); untrap = null;
+
+    if(moved){
+      placeholder.parentNode.insertBefore(sidebarWrap, placeholder);
+      placeholder.remove();
+      placeholder = document.createElement("div");
+      moved = false;
+      // keep hidden on mobile in original layout; CSS handles it
+      sidebarWrap.style.display = "";
+    }
+    lastFocus?.focus?.();
+  };
+
+  openBtn.addEventListener("click", open);
+  closeBtn?.addEventListener("click", close);
+
+  overlay.addEventListener("click", (e)=>{
+    if(e.target === overlay) close();
+  });
+
+  document.addEventListener("keydown", (e)=>{
+    if(!overlay.classList.contains("show")) return;
+    if(e.key === "Escape") close();
+  });
+}
+
 
 /* Carousel */
 function setupCarousel(){
@@ -909,6 +1127,44 @@ function setupFiltersUI(){
   root.querySelector("[data-f-free]").checked = !!state.filters.freeShip;
   root.querySelector("[data-f-stock]").checked = !!state.filters.inStockOnly;
 
+  
+  const minEl = root.querySelector("[data-f-price-min]");
+  const maxEl = root.querySelector("[data-f-price-max]");
+
+  const digitsOnly = (v)=> (v||"").replace(/[^0-9]/g,"").slice(0,9);
+  const normInt = (v)=>{
+    if(v==null) return "";
+    let s = String(v).trim();
+    if(!s) return "";
+    // strip non-digits, keep as int
+    s = digitsOnly(s);
+    if(!s) return "";
+    // remove leading zeros unless single zero
+    s = s.replace(/^0+(?=\d)/,"");
+    return s;
+  };
+  const onMinInput = ()=>{ if(minEl) minEl.value = digitsOnly(minEl.value); };
+  const onMaxInput = ()=>{ if(maxEl) maxEl.value = digitsOnly(maxEl.value); };
+
+  const onMinBlur = ()=>{ if(!minEl) return; minEl.value = normInt(minEl.value); };
+  const onMaxBlur = ()=>{
+    if(!maxEl) return;
+    maxEl.value = normInt(maxEl.value);
+    // swap if min > max
+    const minV = parseInt(normInt(minEl?.value),10);
+    const maxV = parseInt(normInt(maxEl.value),10);
+    if(!isNaN(minV) && !isNaN(maxV) && minV > maxV){
+      const a = String(minV), b = String(maxV);
+      if(minEl) minEl.value = b;
+      maxEl.value = a;
+    }
+  };
+
+  minEl?.addEventListener("input", onMinInput);
+  maxEl?.addEventListener("input", onMaxInput);
+  minEl?.addEventListener("blur", ()=>{ onMinBlur(); apply(); });
+  maxEl?.addEventListener("blur", ()=>{ onMaxBlur(); apply(); });
+
   const apply = () => {
     state.filters.priceMin = root.querySelector("[data-f-price-min]").value;
     state.filters.priceMax = root.querySelector("[data-f-price-max]").value;
@@ -920,15 +1176,22 @@ function setupFiltersUI(){
     saveState();
     writeUrlState(true);
     applyFilters();
+    document.querySelector('#products')?.scrollIntoView({behavior:'smooth'});
   };
 
-  root.querySelectorAll("input,select").forEach(el=> el.addEventListener("input", apply));
+  root.querySelectorAll("select,input[type=checkbox]").forEach(el=> el.addEventListener("change", ()=>{ apply(); document.querySelector("#products")?.scrollIntoView({behavior:"smooth"}); }));
+  root.querySelectorAll("input[type=text],input[type=search],input:not([type])").forEach(el=> el.addEventListener("input", ()=>{ /* live typing only */ }));
   root.querySelector("[data-f-reset]").addEventListener("click", ()=>{
     state.filters = { priceMin:"", priceMax:"", ratingMin:"0", freeShip:false, inStockOnly:false, shipType:"all" };
     saveState();
     writeUrlState(true);
     setupFiltersUI();
+    setupMobileFilterSheet();
+  document.querySelector("[data-fs-reset]")?.addEventListener("click", ()=>{
+    location.href = "index.html";
+  });
     applyFilters();
+    document.querySelector('#products')?.scrollIntoView({behavior:'smooth'});
   });
 }
 
@@ -1081,6 +1344,17 @@ function renderRecentlyViewed(){
   const list = ids.map(id=>products.find(p=>p.id===id)).filter(Boolean);
   if(list.length===0){
     mount.innerHTML = `<div style="padding:12px;color:#6b7280">최근 본 상품이 없습니다. 상품 상세 페이지를 열어보세요.</div>`;
+
+  // horizontal wheel scroll (convert vertical wheel to horizontal)
+  const scroller = mount.querySelector(".strip-items");
+  if(scroller){
+    scroller.addEventListener("wheel", (e)=>{
+      if(Math.abs(e.deltaY) > Math.abs(e.deltaX)){
+        e.preventDefault();
+        scroller.scrollLeft += e.deltaY;
+      }
+    }, { passive:false });
+  }
     return;
   }
   mount.innerHTML = `
@@ -1198,7 +1472,7 @@ function applyFilters(){
         <button class="wish ${wished?"active":""}" type="button" aria-label="wishlist" data-wish="${escapeHtml(p.id)}">${wished?"♥":"♡"}</button>
         ${b.text?`<span class="badge ${b.cls}">${escapeHtml(b.text)}</span>`:""}
         ${p.coupon?`<span class="badge coupon">쿠폰</span>`:""}
-        <div class="thumb">IMG</div>
+        <div class="thumb"><img src="${productImage(p)}" alt="${escapeHtml(p.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=productImage({});"/></div>
         <div class="body">
           <div class="name" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</div>
           <div class="delivery">${escapeHtml(shipLabel(p))}</div>
@@ -1275,6 +1549,21 @@ document.addEventListener("DOMContentLoaded", ()=>{
   if(isAuthed()) refreshCart().catch(()=>{});
 
   document.querySelectorAll("[data-logout]").forEach(b=>b.addEventListener("click", logout));
+
+  // Logo click on HOME: treat as "reset reload" (state reset)
+  const logo = document.querySelector('a.logo[href="index.html"]');
+  if(logo){
+    logo.addEventListener("click", (e)=>{
+      const isHome = /(^\/$)|(index\.html$)/.test(location.pathname);
+      if(!isHome) return; // normal navigation
+      e.preventDefault();
+      if(location.search || location.hash){
+        location.href = "index.html";
+      }else{
+        location.reload();
+      }
+    });
+  }
 
   // Ctrl+K focus
   document.addEventListener("keydown", (e)=>{
@@ -1429,7 +1718,17 @@ document.addEventListener("DOMContentLoaded", ()=>{
       const btn = lf.querySelector("button[type=\"submit\"]") || lf.querySelector("button");
       if(btn){ btn.disabled = true; btn.dataset._txt = btn.textContent; btn.textContent = "로그인 중..."; }
       apiLogin(email,pw)
-        .then((r)=>{ setAuth({ token:r.token, user:r.user }); toast("로그인 성공"); setTimeout(()=>location.href=next, 400); })
+        .then((r)=>{ 
+          try{
+            setTokens({ accessToken: r.accessToken, refreshToken: r.refreshToken });
+            setAuth({ isLoggedIn: true, userId: (r.user && r.user.id) ? r.user.id : "mock-user", loginAt: new Date().toISOString(), email: (r.user && r.user.email) ? r.user.email : "" });
+          }catch(e){
+            toast("저장할 수 없습니다.");
+            return;
+          }
+          toast("로그인 성공");
+          setTimeout(()=>location.href=next, 400);
+        })
         .catch((e)=>{ toast(e.message||"로그인 실패"); })
         .finally(()=>{ if(btn){ btn.disabled=false; if(btn.dataset._txt){ btn.textContent=btn.dataset._txt; } } });
     });
@@ -1557,5 +1856,210 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
   // bottom nav active
   const page=document.body.getAttribute("data-page");
-  document.querySelectorAll(".bnav a").forEach(a=>a.classList.toggle("active", a.getAttribute("data-page")===page));
+  const isHomePage = page==="home";
+  const isSearchHash = isHomePage && (location.hash==="#products" || location.hash.startsWith("#products"));
+  document.querySelectorAll(".bnav a").forEach(a=>{
+    const p=a.getAttribute("data-page");
+    const active = isSearchHash ? (p==="search") : (p===page);
+    a.classList.toggle("active", active);
+  });
+});
+function scrollToProducts(){document.querySelector('#products')?.scrollIntoView({behavior:'smooth'});}
+window.addEventListener('popstate',scrollToProducts);
+window.addEventListener('popstate', ()=>{ readUrlState(); applyFilters(); setTimeout(()=>{ __restoreScrollForUrl(location.pathname+location.search); }, 0); });
+
+
+// QA polish helpers
+window.addEventListener('storage',()=>{
+  const badge=document.querySelector('[data-cart-badge]');
+  if(!badge) return;
+  try{
+    const items=JSON.parse(localStorage.getItem('cartItems')||'[]');
+    const n=items.reduce((a,b)=>a+(b.quantity||0),0);
+    badge.textContent=n>99?'99+':n;
+    badge.style.display=n?'':'none';
+  }catch(e){}
+});
+
+// IME enter guard
+window.isComposing=false;
+document.addEventListener('compositionstart',()=>window.isComposing=true);
+document.addEventListener('compositionend',()=>window.isComposing=false);
+
+
+// ---- API client (Spec v1.0) ----
+(function(){
+  const TOK_KEY="tokens";
+  const AUTH_KEY="auth";
+
+  function getTokens(){
+    try{ return JSON.parse(localStorage.getItem(TOK_KEY)||"null"); }catch(e){ return null; }
+  }
+  function setTokens(t){
+    localStorage.setItem(TOK_KEY, JSON.stringify(t));
+  }
+  function clearAuth(){
+    try{ localStorage.removeItem(TOK_KEY); }catch(e){}
+    try{ localStorage.removeItem(AUTH_KEY); }catch(e){}
+    try{ localStorage.removeItem("minimart_auth"); }catch(e){}
+  }
+
+  async function refreshAccess(){
+    const t=getTokens();
+    if(!t || !t.refreshToken) return null;
+    const res=await fetch("/auth/refresh",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ refreshToken: t.refreshToken })
+    });
+    if(!res.ok) return null;
+    const data=await res.json();
+    const next={...t, accessToken:data.accessToken};
+    try{ setTokens(next); }catch(e){ return null; }
+    // backward compat for old guards
+    try{ localStorage.setItem("minimart_auth", JSON.stringify({token: next.accessToken})); }catch(e){}
+    return next.accessToken;
+  }
+
+  // ---- API fetch wrapper (Error Spec + Refresh single-flight) ----
+let _refreshPromise = null;
+
+async function parseError(res){
+  let data=null;
+  try{ data = await res.clone().json(); }catch(e){ data=null; }
+  if(data && typeof data === 'object') return data;
+  return {
+    timestamp: new Date().toISOString(),
+    status: res.status,
+    code: res.status===401 ? 'AUTH_TOKEN_EXPIRED' : 'UNKNOWN_ERROR',
+    message: '요청 처리 중 오류가 발생했습니다.',
+    details: null,
+    path: (new URL(location.href)).pathname
+  };
+}
+
+async function refreshAccessSingleFlight(){
+  if(_refreshPromise) return _refreshPromise;
+  _refreshPromise = (async ()=>{
+    const t=getTokens();
+    if(!t || !t.refreshToken) return null;
+    try{
+      const r = await fetch('/auth/refresh',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ refreshToken: t.refreshToken })
+      });
+      if(!r.ok){
+        const ed = await parseError(r);
+        if(ed.code === 'AUTH_REFRESH_EXPIRED'){
+          return null;
+        }
+        return null;
+      }
+      const next = await r.json();
+      try{
+        localStorage.setItem('tokens', JSON.stringify({ ...t, accessToken: next.accessToken }));
+        // backward compat for old guards
+        localStorage.setItem("minimart_auth", JSON.stringify({token: next.accessToken}));
+      }catch(e){}
+      return next.accessToken;
+    }catch(e){
+      return null;
+    }finally{
+      _refreshPromise = null;
+    }
+  })();
+  return _refreshPromise;
+}
+
+window.apiFetch = async function apiFetch(url, opts={}, meta={}){
+  const t=getTokens();
+  const headers=new Headers(opts.headers||{});
+  if(t && t.accessToken) headers.set('Authorization','Bearer '+t.accessToken);
+  if(!headers.has('Content-Type') && opts.body && !(opts.body instanceof FormData)) headers.set('Content-Type','application/json');
+
+  const res = await fetch(url, {...opts, headers});
+
+  // Fast path
+  if(res.status !== 401) return res;
+
+  // Parse error for code-based branching
+  const errData = await parseError(res);
+
+  if(errData.code === 'AUTH_TOKEN_EXPIRED'){
+    const newAcc = await refreshAccessSingleFlight();
+    if(!newAcc){
+      clearAuth();
+      const redirect = meta.redirect || (document.body && document.body.getAttribute('data-page')) || '';
+      if(meta.noRedirect!==true){
+        location.href = 'login.html' + (redirect ? ('?redirect='+encodeURIComponent(redirect) + (meta.id?('&id='+encodeURIComponent(meta.id)):'') ) : '');
+      }
+      return res;
+    }
+    const headers2=new Headers(opts.headers||{});
+    headers2.set('Authorization','Bearer '+newAcc);
+    if(!headers2.has('Content-Type') && opts.body && !(opts.body instanceof FormData)) headers2.set('Content-Type','application/json');
+    return fetch(url, {...opts, headers: headers2});
+  }
+
+  if(errData.code === 'AUTH_REFRESH_EXPIRED'){
+    clearAuth();
+    const redirect = meta.redirect || (document.body && document.body.getAttribute('data-page')) || '';
+    if(meta.noRedirect!==true){
+      location.href = 'login.html' + (redirect ? ('?redirect='+encodeURIComponent(redirect) + (meta.id?('&id='+encodeURIComponent(meta.id)):'') ) : '');
+    }
+    return res;
+  }
+
+  // Other 401
+  clearAuth();
+  return res;
+};
+
+window.apiFetchJson = async function apiFetchJson(url, opts={}, meta={}){
+  const res = await window.apiFetch(url, opts, meta);
+  if(res.ok){
+    if(res.status===204) return null;
+    return await res.json();
+  }
+  const errData = await parseError(res);
+  throw errData;
+};
+
+
+
+  window.mmLogout = function(){
+    clearAuth();
+    location.href="index.html";
+  };
+})();
+
+try{ window.openOptionModal = openOptionModal; }catch(e){}
+
+async function updateCartBadgeFromAPI(){
+  const badge=document.querySelector('[data-cart-badge]');
+  if(!badge) return;
+  try{
+    const a=JSON.parse(localStorage.getItem('auth')||'null');
+    const t=JSON.parse(localStorage.getItem('tokens')||'null');
+    if(!(a&&a.isLoggedIn&&t&&t.accessToken)){ badge.style.display='none'; return; }
+  }catch(e){ badge.style.display='none'; return; }
+  try{
+    const res=await window.apiFetch('/cart',{method:'GET'},{noRedirect:true});
+    if(!res.ok) { badge.style.display='none'; return; }
+    const data=await res.json();
+    const n=(data.items||[]).reduce((s,it)=>s+(it.quantity||0),0);
+    badge.textContent=n>99?'99+':String(n);
+    badge.style.display=n?'' :'none';
+  }catch(e){ badge.style.display='none'; }
+}
+window.updateCartBadgeFromAPI = updateCartBadgeFromAPI;
+document.addEventListener('DOMContentLoaded', ()=>{ try{updateCartBadgeFromAPI();}catch(e){} });
+
+document.querySelector('[data-search]')?.addEventListener('focus', e=>{
+  setTimeout(()=> e.target.scrollIntoView({block:'center',behavior:'smooth'}),200);
+});
+
+document.querySelector('[data-close-filters]')?.addEventListener('click', ()=>{
+  setTimeout(()=> document.querySelector('#products')?.scrollIntoView({behavior:'smooth'}),250);
 });

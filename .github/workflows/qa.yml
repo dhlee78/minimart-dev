@@ -1,0 +1,29 @@
+name: QA
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install
+        run: npm ci
+
+      - name: Health + API smoke
+        env:
+          QA_BASE_URL: http://localhost:3000
+          QA_USER: ${{ secrets.QA_USER }}
+          QA_PASS: ${{ secrets.QA_PASS }}
+        run: |
+          node server.js &
+          sleep 2
+          node scripts/qa-smoke.mjs

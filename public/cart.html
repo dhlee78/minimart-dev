@@ -6,7 +6,18 @@
   <title>MiniMarket | 장바구니</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body data-page="cart">
+<body>
+<script>(function(){
+  try{
+    const a=JSON.parse(localStorage.getItem("auth")||"null");
+    const t=JSON.parse(localStorage.getItem("tokens")||"null");
+    if(!(a&&a.isLoggedIn&&t&&t.accessToken)){
+      location.href="login.html?redirect=cart" + (location.search.includes("id=")?("&"+location.search.slice(1)):"");
+    }
+  }catch(e){ location.href="login.html?redirect=cart"; }
+})();</script>
+
+ data-page="cart">
   
 <div class="topbar">
   <div class="top-inner">
@@ -71,12 +82,33 @@
 
 <div class="toast" role="status" aria-live="polite"></div>
 
-  <div class="container">
+  <div id="cart-skeleton" style="padding:40px 24px"><div style="height:180px;background:#F5F6F8;border-radius:16px"></div><div style="height:140px;background:#F5F6F8;border-radius:16px;margin-top:16px"></div></div><div id="cart-error" style="display:none;text-align:center;padding:80px 16px"><div style="font-size:20px;font-weight:700;margin-bottom:12px">오류가 발생했습니다</div><button class="btn primary" id="cart-retry" type="button" style="height:40px">다시 시도</button></div><div class="container">
     <div class="main" style="grid-template-columns:1fr 340px">
-      <div class="detail-card detail-pad" data-cart></div>
+      <div class="detail-card detail-pad"><div id="cartMount">
+<div class="cart-v2-head" style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px">
+  <div style="font-size:20px;font-weight:700">장바구니</div>
+  <div style="display:flex;gap:12px;align-items:center">
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="cartSelectAll" style="width:16px;height:16px"> 전체선택</label>
+    <button id="cartDeleteSelected" class="link-danger" type="button">선택삭제</button>
+    <button id="cartDeleteAll" class="link-danger" type="button">전체삭제</button>
+  </div>
+</div>
+<div data-cart></div></div></div>
+<div class="cart-head">
+  <label><input type="checkbox" id="selectAll"> 전체선택</label>
+  <button id="delSel" class="danger">선택삭제</button>
+  <button id="delAll" class="danger">전체삭제</button>
+</div>
+<div id="cartEmpty" style="display:none;text-align:center;padding:60px">
+  <h2>장바구니가 비었습니다</h2>
+  <a href="index.html#products" class="btn primary">상품 보러가기</a>
+</div>
+
       <div class="summary">
         <div class="line"><div style="color:#6b7280">상품금액</div><div data-subtotal style="font-weight:950">0원</div></div>
         <div class="line"><div style="color:#6b7280">배송비</div><div data-ship style="font-weight:950">0원</div></div>
+<div class="line"><div style="color:#6b7280">할인</div><div data-discount style="font-weight:950">0원</div></div>
+<button class="btn" data-coupon type="button" style="margin-top:10px;width:100%;justify-content:center;height:40px">쿠폰 적용</button>
         <div class="line"><div style="font-weight:950">총 결제금액</div><div data-total style="font-weight:950">0원</div></div>
         <button class="btn primary" data-checkout type="button" style="margin-top:12px;width:100%;justify-content:center">주문하기</button>
         <div style="margin-top:10px;color:#6b7280;font-size:12px;line-height:1.5">
@@ -97,5 +129,6 @@
 </div>
 
   <script src="app.js"></script>
+<script src='cart-v2.js'></script>
 </body>
 </html>

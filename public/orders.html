@@ -6,7 +6,16 @@
   <title>MiniMarket | 주문내역</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body data-page="orders">
+<body>
+<script>(function(){
+  try{
+    const a=JSON.parse(localStorage.getItem("auth")||"null");
+    const t=JSON.parse(localStorage.getItem("tokens")||"null");
+    if(!(a&&a.isLoggedIn&&t&&t.accessToken)){
+      location.href="login.html?redirect=orders" + (location.search.includes("id=")?("&"+location.search.slice(1)):"");
+    }
+  }catch(e){ location.href="login.html?redirect=orders"; }
+})();</script> data-page="orders">
   
 <div class="topbar">
   <div class="top-inner">
@@ -70,6 +79,9 @@
 </div>
 
 <div class="toast" role="status" aria-live="polite"></div>
+<div id="orders-skeleton" style="padding:40px 24px"><div style="height:140px;background:#F5F6F8;border-radius:16px"></div><div style="height:140px;background:#F5F6F8;border-radius:16px;margin-top:16px"></div></div>
+<div id="orders-error" style="display:none;text-align:center;padding:80px 16px"><div style="font-size:20px;font-weight:700;margin-bottom:12px">오류가 발생했습니다</div><button class="btn primary" id="orders-retry" type="button" style="height:40px">다시 시도</button></div>
+<div id="orders-mount" class="container"></div>
 
   <div class="container">
     <div class="detail-card detail-pad">
@@ -89,5 +101,6 @@
 </div>
 
   <script src="app.js"></script>
+<script src='orders-v2.js'></script>
 </body>
 </html>
