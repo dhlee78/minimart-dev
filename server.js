@@ -45,7 +45,7 @@ function asyncHandler(fn){
 }
 
 // ---- Data store (in-memory for mock) ----
-const PRODUCTS_PATH = path.join(__dirname, "data", "products.json");
+const PRODUCTS_PATH = path.resolve(process.cwd(), "src", "data", "products.json");
 let products = JSON.parse(fs.readFileSync(PRODUCTS_PATH, "utf-8"));
 function persistProducts(){
   fs.writeFileSync(PRODUCTS_PATH, JSON.stringify(products, null, 2), "utf-8");
